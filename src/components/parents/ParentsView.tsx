@@ -18,10 +18,14 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
-// Add the missing type for jsPDF.autoTable
+// Extend the jsPDF type definition
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    autoTable: (options: any) => jsPDF & {
+      previous: {
+        finalY: number;
+      };
+    };
   }
 }
 
@@ -95,16 +99,20 @@ const ParentsView: React.FC<ParentsViewProps> = ({ studentId }) => {
       [`Program ID: ${currentStudent.program_id}`],
     ];
     
+    let yPosition = 38;
+    
     doc.autoTable({
-      startY: 38,
+      startY: yPosition,
       body: studentInfo,
       theme: 'plain',
       styles: { fontSize: 12, cellPadding: 3 },
     });
     
+    yPosition = doc.autoTable.previous.finalY + 10;
+    
     // Add medical info
     doc.setFontSize(16);
-    doc.text('Medical Information', 14, doc.autoTable.previous.finalY + 10);
+    doc.text('Medical Information', 14, yPosition);
     
     const medicalInfo = [
       [`Primary Diagnosis: ${currentStudent.primary_diagnosis || 'Not specified'}`],
@@ -114,15 +122,17 @@ const ParentsView: React.FC<ParentsViewProps> = ({ studentId }) => {
     ];
     
     doc.autoTable({
-      startY: doc.autoTable.previous.finalY + 12,
+      startY: yPosition + 2,
       body: medicalInfo,
       theme: 'plain',
       styles: { fontSize: 12, cellPadding: 3 },
     });
     
+    yPosition = doc.autoTable.previous.finalY + 10;
+    
     // Add session info
     doc.setFontSize(16);
-    doc.text('Session Information', 14, doc.autoTable.previous.finalY + 10);
+    doc.text('Session Information', 14, yPosition);
     
     const sessionInfo = [
       [`Number of Sessions: ${currentStudent.number_of_sessions || 'Not specified'}`],
@@ -132,15 +142,17 @@ const ParentsView: React.FC<ParentsViewProps> = ({ studentId }) => {
     ];
     
     doc.autoTable({
-      startY: doc.autoTable.previous.finalY + 12,
+      startY: yPosition + 2,
       body: sessionInfo,
       theme: 'plain',
       styles: { fontSize: 12, cellPadding: 3 },
     });
     
+    yPosition = doc.autoTable.previous.finalY + 10;
+    
     // Add strengths and weakness
     doc.setFontSize(16);
-    doc.text('Performance', 14, doc.autoTable.previous.finalY + 10);
+    doc.text('Performance', 14, yPosition);
     
     const performanceInfo = [
       [`Strengths: ${currentStudent.strengths || 'Not evaluated'}`],
@@ -149,7 +161,7 @@ const ParentsView: React.FC<ParentsViewProps> = ({ studentId }) => {
     ];
     
     doc.autoTable({
-      startY: doc.autoTable.previous.finalY + 12,
+      startY: yPosition + 2,
       body: performanceInfo,
       theme: 'plain',
       styles: { fontSize: 12, cellPadding: 3 },

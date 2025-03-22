@@ -7,11 +7,16 @@ import supabase from '@/lib/api';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AnnouncementForm from '@/components/admin/AnnouncementForm';
 
-const AnnouncementBoard = () => {
+interface AnnouncementBoardProps {
+  canEdit?: boolean;
+}
+
+const AnnouncementBoard: React.FC<AnnouncementBoardProps> = ({ canEdit }) => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const user = getCurrentUser();
   const userIsAdmin = isAdmin();
+  const showEditForm = canEdit !== undefined ? canEdit : userIsAdmin;
 
   const fetchAnnouncements = async () => {
     try {
@@ -50,7 +55,7 @@ const AnnouncementBoard = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
-        {userIsAdmin && (
+        {showEditForm && (
           <div className="mb-6">
             <AnnouncementForm onAnnouncementAdded={fetchAnnouncements} />
           </div>
