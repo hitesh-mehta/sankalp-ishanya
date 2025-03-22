@@ -15,7 +15,7 @@ const checkSupabaseConfig = () => {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export type Center = {
-  id: string;  // Updated from number to string to match UUID format
+  id: string;  // UUID format
   center_id: number;  // Added this field based on the actual data structure
   name: string;
   location: string;
@@ -28,7 +28,7 @@ export type Center = {
 };
 
 export type Program = {
-  id: string;  // Updated to string for UUID format
+  id: string;  // UUID format
   program_id: number; // Numeric ID
   name: string;
   description?: string;
@@ -149,9 +149,6 @@ const getTableName = (displayName: string): string => {
 // Fetch tables by program ID
 export const fetchTablesByProgram = async (programId: number): Promise<TableInfo[] | null> => {
   try {
-    // In a real-world scenario, we would fetch tables from the database
-    // For this implementation, we create predefined tables for each program
-    
     // Get the program to get its center_id
     const { data: programData, error: programError } = await supabase
       .from('programs')
@@ -209,51 +206,55 @@ export const fetchTableColumns = async (tableName: string): Promise<string[] | n
   try {
     console.log(`Fetching columns for table ${tableName}`);
     
-    // Check if the table exists in the database
+    // First try to fetch a row to get columns
     const { data, error } = await supabase
       .from(tableName.toLowerCase())
       .select('*')
       .limit(1);
       
     if (error) {
-      console.error('Error checking table:', error);
-      // If the table doesn't exist or we can't access it, return predefined columns
-      if (tableName.toLowerCase() === 'students') {
-        return [
-          'id', 'name', 'age', 'grade', 'enrollment_date', 'gender', 'address', 'city',
-          'state', 'postal_code', 'country', 'phone', 'email', 'guardian_name',
-          'guardian_phone', 'guardian_email', 'emergency_contact', 'emergency_phone',
-          'birth_date', 'native_language', 'academic_year', 'admission_date',
-          'current_status', 'previous_school', 'health_conditions', 'blood_group',
-          'allergies', 'medications', 'family_income', 'scholarship_status',
-          'transportation_mode', 'extracurricular_activities', 'remarks', 'profile_image',
-          'center_id', 'program_id'
-        ];
-      } else if (tableName.toLowerCase() === 'educators') {
-        return [
-          'id', 'name', 'subject', 'years_experience', 'email', 'phone', 'address',
-          'hire_date', 'education', 'certifications', 'department', 'position',
-          'salary_grade', 'contract_type', 'specializations', 'teaching_hours',
-          'center_id', 'program_id'
-        ];
-      } else if (tableName.toLowerCase() === 'courses') {
-        return [
-          'id', 'name', 'duration_weeks', 'max_students', 'description', 'start_date',
-          'end_date', 'schedule', 'classroom', 'credits', 'prerequisites', 'syllabus',
-          'materials', 'assessment_method', 'center_id', 'program_id'
-        ];
-      }
+      console.error('Error fetching table schema:', error);
+      throw error;
     }
     
-    console.log('Table data sample:', data);
-    
-    // If we successfully accessed the table, get column names from the first row
+    // If we have data, extract columns
     if (data && data.length > 0) {
       return Object.keys(data[0]);
     }
     
-    // Default columns if table exists but is empty
+    // If table exists but is empty, try fetching the structure differently
+    // This fallback is less accurate but better than nothing
+    console.log('Table exists but is empty, using predefined columns');
+    
+    if (tableName.toLowerCase() === 'students') {
+      return [
+        'id', 'name', 'age', 'grade', 'enrollment_date', 'gender', 'address', 'city',
+        'state', 'postal_code', 'country', 'phone', 'email', 'guardian_name',
+        'guardian_phone', 'guardian_email', 'emergency_contact', 'emergency_phone',
+        'birth_date', 'native_language', 'academic_year', 'admission_date',
+        'current_status', 'previous_school', 'health_conditions', 'blood_group',
+        'allergies', 'medications', 'family_income', 'scholarship_status',
+        'transportation_mode', 'extracurricular_activities', 'remarks', 'profile_image',
+        'center_id', 'program_id'
+      ];
+    } else if (tableName.toLowerCase() === 'educators') {
+      return [
+        'id', 'name', 'subject', 'years_experience', 'email', 'phone', 'address',
+        'hire_date', 'education', 'certifications', 'department', 'position',
+        'salary_grade', 'contract_type', 'specializations', 'teaching_hours',
+        'center_id', 'program_id'
+      ];
+    } else if (tableName.toLowerCase() === 'courses') {
+      return [
+        'id', 'name', 'duration_weeks', 'max_students', 'description', 'start_date',
+        'end_date', 'schedule', 'classroom', 'credits', 'prerequisites', 'syllabus',
+        'materials', 'assessment_method', 'center_id', 'program_id'
+      ];
+    }
+    
+    // Default minimal columns
     return ['id', 'name', 'center_id', 'program_id'];
+    
   } catch (error) {
     return handleError(error, `Failed to fetch columns for ${tableName}`);
   }
@@ -307,7 +308,7 @@ export const fetchTableData = async (tableName: string, center_id?: number): Pro
   try {
     console.log(`Fetching data from ${tableName} for center_id: ${center_id}`);
     
-    // Try to fetch data from the actual table
+    // Query the actual table
     let query = supabase.from(tableName.toLowerCase()).select('*');
     
     // Filter by center_id if provided
@@ -319,8 +320,7 @@ export const fetchTableData = async (tableName: string, center_id?: number): Pro
     
     if (error) {
       console.error('Error fetching table data:', error);
-      // If table doesn't exist or we can't access it, generate mock data
-      return generateMockData(tableName, 10, center_id);
+      throw error;
     }
     
     console.log(`Successfully fetched ${data?.length || 0} records from ${tableName}:`, data);
@@ -328,111 +328,6 @@ export const fetchTableData = async (tableName: string, center_id?: number): Pro
   } catch (error) {
     return handleError(error, `Failed to fetch data from ${tableName}`);
   }
-};
-
-// Generate mock data for tables that don't exist
-const generateMockData = (tableName: string, count: number = 10, center_id?: number): any[] => {
-  const mockData = [];
-  
-  // Get all possible columns for this table type
-  let columns: string[] = [];
-  
-  if (tableName.toLowerCase().includes('student')) {
-    columns = [
-      'id', 'name', 'age', 'grade', 'enrollment_date', 'gender', 'address', 'city',
-      'state', 'postal_code', 'country', 'phone', 'email', 'guardian_name',
-      'guardian_phone', 'guardian_email', 'emergency_contact', 'emergency_phone',
-      'birth_date', 'native_language', 'academic_year', 'admission_date',
-      'current_status', 'previous_school', 'health_conditions', 'blood_group',
-      'allergies', 'medications', 'family_income', 'scholarship_status',
-      'transportation_mode', 'extracurricular_activities', 'remarks', 'profile_image',
-      'center_id', 'program_id'
-    ];
-  } else if (tableName.toLowerCase().includes('educator')) {
-    columns = [
-      'id', 'name', 'subject', 'years_experience', 'email', 'phone', 'address',
-      'hire_date', 'education', 'certifications', 'department', 'position',
-      'salary_grade', 'contract_type', 'specializations', 'teaching_hours',
-      'center_id', 'program_id'
-    ];
-  } else if (tableName.toLowerCase().includes('course')) {
-    columns = [
-      'id', 'name', 'duration_weeks', 'max_students', 'description', 'start_date',
-      'end_date', 'schedule', 'classroom', 'credits', 'prerequisites', 'syllabus',
-      'materials', 'assessment_method', 'center_id', 'program_id'
-    ];
-  } else {
-    columns = ['id', 'name', 'description', 'center_id', 'program_id'];
-  }
-  
-  console.log(`Generating ${count} mock records for ${tableName} with center_id ${center_id}`);
-  
-  for (let i = 1; i <= count; i++) {
-    const record: Record<string, any> = {};
-    
-    columns.forEach(column => {
-      switch(column) {
-        case 'id':
-          record[column] = i;
-          break;
-        case 'name':
-          record[column] = `${tableName.charAt(0).toUpperCase() + tableName.slice(1, -1)} ${i}`;
-          break;
-        case 'age':
-          record[column] = 15 + (i % 10);
-          break;
-        case 'grade':
-          record[column] = ['A', 'B', 'C', 'A+', 'B-'][i % 5];
-          break;
-        case 'enrollment_date':
-        case 'hire_date':
-        case 'start_date':
-          record[column] = new Date(2023, (i % 12), (i % 28) + 1).toISOString().split('T')[0];
-          break;
-        case 'end_date':
-          record[column] = new Date(2024, (i % 12), (i % 28) + 1).toISOString().split('T')[0];
-          break;
-        case 'gender':
-          record[column] = i % 2 === 0 ? 'Female' : 'Male';
-          break;
-        case 'center_id':
-          record[column] = center_id || (90 + (i % 10));
-          break;
-        case 'program_id':
-          record[column] = 90 + (i % 10);
-          break;
-        case 'email':
-          record[column] = `${tableName.toLowerCase().slice(0, -1)}${i}@example.com`;
-          break;
-        case 'phone':
-          record[column] = `+91 ${9800000000 + i}`;
-          break;
-        case 'subject':
-          record[column] = ['Math', 'Science', 'History', 'English', 'Art'][i % 5];
-          break;
-        default:
-          // Generate appropriate data based on column name
-          if (column.includes('date')) {
-            record[column] = new Date(2023, (i % 12), (i % 28) + 1).toISOString().split('T')[0];
-          } else if (column.includes('description')) {
-            record[column] = `Description for ${record.name || 'item'} ${i}`;
-          } else if (column.includes('address')) {
-            record[column] = `${100 + i} Main Street`;
-          } else if (column.includes('city')) {
-            record[column] = ['Mumbai', 'Pune', 'Delhi', 'Bangalore', 'Chennai'][i % 5];
-          } else if (column.includes('status')) {
-            record[column] = ['Active', 'On Leave', 'Graduated', 'Transferred', 'Active'][i % 5];
-          } else {
-            record[column] = `Value for ${column} ${i}`;
-          }
-      }
-    });
-    
-    mockData.push(record);
-  }
-  
-  console.log(`Generated ${mockData.length} mock records for ${tableName}`);
-  return mockData;
 };
 
 // Insert a row into a table
