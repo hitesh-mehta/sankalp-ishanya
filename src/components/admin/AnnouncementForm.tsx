@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,7 +59,7 @@ const AnnouncementForm = () => {
 
       if (error) {
         console.error('Error creating announcement:', error);
-        toast.error('Failed to create announcement');
+        toast.error('Failed to create announcement: ' + error.message);
         return;
       }
 
@@ -73,39 +73,42 @@ const AnnouncementForm = () => {
         setRecentAnnouncements([announcementData[0], ...recentAnnouncements.slice(0, 2)]);
       }
       
-    } catch (error) {
+      // Refresh the announcements list
+      fetchRecentAnnouncements();
+      
+    } catch (error: any) {
       console.error('Error creating announcement:', error);
-      toast.error('An unexpected error occurred');
+      toast.error('An unexpected error occurred: ' + error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Fetch recent announcements on component mount
-  useState(() => {
-    const fetchRecentAnnouncements = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('announcements')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(3);
+  const fetchRecentAnnouncements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
 
-        if (error) {
-          console.error('Error fetching announcements:', error);
-          return;
-        }
-
-        if (data) {
-          setRecentAnnouncements(data);
-        }
-      } catch (error) {
-        console.error('Error fetching recent announcements:', error);
+      if (error) {
+        console.error('Error fetching announcements:', error);
+        return;
       }
-    };
 
+      if (data) {
+        setRecentAnnouncements(data);
+      }
+    } catch (error) {
+      console.error('Error fetching recent announcements:', error);
+    }
+  };
+
+  // Fetch recent announcements on component mount
+  useEffect(() => {
     fetchRecentAnnouncements();
-  });
+  }, []);
 
   return (
     <Card className="shadow-lg border-t-4 border-ishanya-yellow">

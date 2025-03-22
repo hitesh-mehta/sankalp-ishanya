@@ -13,10 +13,12 @@ const CenterCard = ({ center, onClick }: CenterCardProps) => {
   
   const handleClick = () => {
     setIsLoading(true);
+    // Call onClick immediately, no need for timeout that could potentially cause issues
+    onClick(center);
+    // Reset loading state after a brief period, giving visual feedback
     setTimeout(() => {
-      onClick(center);
       setIsLoading(false);
-    }, 300); // Small delay to show loading state
+    }, 300);
   };
 
   return (

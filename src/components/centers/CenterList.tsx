@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Center, fetchCenters } from '@/lib/api';
 import CenterCard from './CenterCard';
@@ -7,9 +6,10 @@ import ErrorDisplay from '../ui/ErrorDisplay';
 
 type CenterListProps = {
   onSelectCenter: (center: Center) => void;
+  centers?: Center[];  // Make centers optional
 };
 
-const CenterList = ({ onSelectCenter }: CenterListProps) => {
+const CenterList = ({ onSelectCenter, centers: propCenters }: CenterListProps) => {
   const [centers, setCenters] = useState<Center[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +34,15 @@ const CenterList = ({ onSelectCenter }: CenterListProps) => {
   };
 
   useEffect(() => {
-    loadCenters();
-  }, []);
+    // If centers are provided as props, use them
+    if (propCenters && propCenters.length > 0) {
+      setCenters(propCenters);
+      setLoading(false);
+    } else {
+      // Otherwise fetch them
+      loadCenters();
+    }
+  }, [propCenters]);
 
   if (loading) {
     return (
