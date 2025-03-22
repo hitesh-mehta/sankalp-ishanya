@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Center, Program, fetchProgramsByCenter } from '@/lib/api';
 import ProgramCard from './ProgramCard';
@@ -20,7 +19,7 @@ const ProgramList = ({ center, onSelectProgram }: ProgramListProps) => {
     setError(null);
     
     try {
-      const data = await fetchProgramsByCenter(center.id);
+      const data = await fetchProgramsByCenter(center.center_id);
       if (data) {
         setPrograms(data);
       } else {
@@ -36,7 +35,7 @@ const ProgramList = ({ center, onSelectProgram }: ProgramListProps) => {
 
   useEffect(() => {
     loadPrograms();
-  }, [center.id]);
+  }, [center.center_id]);
 
   if (loading) {
     return (

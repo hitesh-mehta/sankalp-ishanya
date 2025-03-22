@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -14,12 +15,16 @@ const checkSupabaseConfig = () => {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export type Center = {
-  id: number;
+  id: string;  // Updated from number to string to match UUID format
+  center_id: number;  // Added this field based on the actual data structure
   name: string;
   location: string;
   description?: string;
   image_url?: string;
   created_at?: string;
+  num_of_student?: number;
+  num_of_educator?: number;
+  num_of_employees?: number;
 };
 
 export type Program = {
@@ -64,7 +69,7 @@ export const fetchCenters = async (): Promise<Center[] | null> => {
   }
 };
 
-// Fetch programs by center ID
+// Fetch programs by center ID - Updated to use center_id instead of id
 export const fetchProgramsByCenter = async (centerId: number): Promise<Program[] | null> => {
   try {
     if (!checkSupabaseConfig()) {
@@ -74,7 +79,7 @@ export const fetchProgramsByCenter = async (centerId: number): Promise<Program[]
     const { data, error } = await supabase
       .from('programs')
       .select('*')
-      .eq('center_id', centerId)
+      .eq('center_id', centerId)  // Using center_id which is an integer
       .order('name');
     
     if (error) throw error;
