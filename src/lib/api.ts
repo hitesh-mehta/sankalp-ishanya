@@ -48,8 +48,17 @@ export type TableInfo = {
   center_id?: number; // Added to filter students by center
 };
 
+// Define proper types for validation rules
+type ValidationRule = {
+  required?: boolean;
+  min?: number;
+  max?: number;
+  pattern?: RegExp;
+  message?: string;
+};
+
 // Validation rules for different table types
-export const validationRules = {
+export const validationRules: Record<string, Record<string, ValidationRule>> = {
   Students: {
     name: { required: true, message: 'Student name is required' },
     age: { required: true, min: 5, max: 25, message: 'Age must be between 5 and 25' },
@@ -81,12 +90,18 @@ export const fetchCenters = async (): Promise<Center[] | null> => {
       throw new Error('Supabase configuration missing or invalid');
     }
 
+    console.log('Fetching centers from Supabase...');
     const { data, error } = await supabase
       .from('centers')
       .select('*')
       .order('name');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching centers:', error);
+      throw error;
+    }
+    
+    console.log('Centers fetched:', data);
     return data || [];
   } catch (error) {
     return handleError(error, 'Failed to fetch centers');
@@ -108,7 +123,11 @@ export const fetchProgramsByCenter = async (centerId: number): Promise<Program[]
       .eq('center_id', centerId)
       .order('name');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching programs:', error);
+      throw error;
+    }
+    
     console.log('Programs fetched:', data);
     return data || [];
   } catch (error) {
@@ -140,13 +159,17 @@ export const fetchTablesByProgram = async (programId: number): Promise<TableInfo
       .eq('program_id', programId)
       .single();
       
-    if (programError) throw programError;
+    if (programError) {
+      console.error('Error fetching program:', programError);
+      throw programError;
+    }
     
     if (!programData) {
       throw new Error(`Program with ID ${programId} not found`);
     }
     
     const center_id = programData.center_id;
+    console.log(`Found center_id ${center_id} for program_id ${programId}`);
     
     const tables: TableInfo[] = [
       { 
@@ -184,6 +207,8 @@ export const fetchTablesByProgram = async (programId: number): Promise<TableInfo
 // Fetch all available columns for a table
 export const fetchTableColumns = async (tableName: string): Promise<string[] | null> => {
   try {
+    console.log(`Fetching columns for table ${tableName}`);
+    
     // Check if the table exists in the database
     const { data, error } = await supabase
       .from(tableName.toLowerCase())
@@ -220,6 +245,8 @@ export const fetchTableColumns = async (tableName: string): Promise<string[] | n
       }
     }
     
+    console.log('Table data sample:', data);
+    
     // If we successfully accessed the table, get column names from the first row
     if (data && data.length > 0) {
       return Object.keys(data[0]);
@@ -240,7 +267,7 @@ export const validateData = (tableName: string, data: Record<string, any>): { is
   const tableType = tableName.toLowerCase().includes('student') ? 'Students' : 
                     tableName.toLowerCase().includes('educator') ? 'Educators' : 'Courses';
   
-  const rules = validationRules[tableType as keyof typeof validationRules] || {};
+  const rules = validationRules[tableType] || {};
   
   // Check each field against the rules
   Object.entries(rules).forEach(([field, rule]) => {
@@ -275,7 +302,7 @@ export const validateData = (tableName: string, data: Record<string, any>): { is
   return { isValid, errors };
 };
 
-// Fetch data from a specific table
+// Fetch data from a specific table with proper logging
 export const fetchTableData = async (tableName: string, center_id?: number): Promise<any[] | null> => {
   try {
     console.log(`Fetching data from ${tableName} for center_id: ${center_id}`);
@@ -296,7 +323,7 @@ export const fetchTableData = async (tableName: string, center_id?: number): Pro
       return generateMockData(tableName, 10, center_id);
     }
     
-    console.log(`Fetched ${data?.length || 0} records from ${tableName}`);
+    console.log(`Successfully fetched ${data?.length || 0} records from ${tableName}:`, data);
     return data || [];
   } catch (error) {
     return handleError(error, `Failed to fetch data from ${tableName}`);
@@ -337,6 +364,8 @@ const generateMockData = (tableName: string, count: number = 10, center_id?: num
   } else {
     columns = ['id', 'name', 'description', 'center_id', 'program_id'];
   }
+  
+  console.log(`Generating ${count} mock records for ${tableName} with center_id ${center_id}`);
   
   for (let i = 1; i <= count; i++) {
     const record: Record<string, any> = {};
@@ -402,6 +431,7 @@ const generateMockData = (tableName: string, count: number = 10, center_id?: num
     mockData.push(record);
   }
   
+  console.log(`Generated ${mockData.length} mock records for ${tableName}`);
   return mockData;
 };
 
@@ -445,7 +475,7 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
     }
     
     toast.success('Record added successfully');
-    return { success: true, data };
+    return { success: true };
   } catch (error: any) {
     handleError(error, 'Failed to add row');
     return { success: false, errors: { general: error.message } };
@@ -479,7 +509,7 @@ export const updateRow = async (tableName: string, id: number, rowData: any): Pr
     }
     
     toast.success('Record updated successfully');
-    return { success: true, data };
+    return { success: true };
   } catch (error: any) {
     handleError(error, 'Failed to update row');
     return { success: false, errors: { general: error.message } };

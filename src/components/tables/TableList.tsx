@@ -4,6 +4,7 @@ import { TableInfo, fetchTablesByProgram } from '@/lib/api';
 import { Program } from '@/lib/api';
 import { ChevronRight, Database } from 'lucide-react';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import ErrorDisplay from '../ui/ErrorDisplay';
 
 type TableListProps = {
   program: Program;
@@ -14,17 +15,29 @@ type TableListProps = {
 const TableList = ({ program, onSelectTable, selectedTable }: TableListProps) => {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadTables = async () => {
       setLoading(true);
-      // Convert program_id to number to fix the type error
-      const result = await fetchTablesByProgram(Number(program.program_id));
-      if (result) {
-        console.log(`Loaded ${result.length} tables for program ${program.program_id}:`, result);
-        setTables(result);
+      setError(null);
+      
+      try {
+        console.log(`Loading tables for program ID ${program.program_id}`);
+        // Convert program_id to number to fix the type error
+        const result = await fetchTablesByProgram(Number(program.program_id));
+        if (result) {
+          console.log(`Loaded ${result.length} tables for program ${program.program_id}:`, result);
+          setTables(result);
+        } else {
+          setError("Failed to load tables. Please try again.");
+        }
+      } catch (err) {
+        console.error("Error loading tables:", err);
+        setError("An unexpected error occurred while loading tables.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadTables();
@@ -36,6 +49,10 @@ const TableList = ({ program, onSelectTable, selectedTable }: TableListProps) =>
         <LoadingSpinner size="md" />
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorDisplay message={error} />;
   }
 
   return (
