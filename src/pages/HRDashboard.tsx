@@ -21,6 +21,7 @@ const HRDashboard = () => {
 
   // Handle selecting employee management
   const handleSelectEmployees = () => {
+    console.log("Selecting employee table:", employeeTable);
     setSelectedTable(employeeTable);
   };
 

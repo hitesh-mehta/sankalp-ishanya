@@ -14,6 +14,10 @@ type TableActionsProps = {
 const TableActions = ({ tableName, onInsert, onRefresh }: TableActionsProps) => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
+  const handleCloseUpload = () => {
+    setIsUploadOpen(false);
+  };
+
   return (
     <div className="flex justify-between items-center mb-6">
       <h2 className="text-xl font-semibold text-ishanya-green">
@@ -56,7 +60,7 @@ const TableActions = ({ tableName, onInsert, onRefresh }: TableActionsProps) => 
           </DialogHeader>
           <CsvUpload 
             tableName={tableName} 
-            onClose={() => setIsUploadOpen(false)} 
+            onClose={handleCloseUpload} 
             onSuccess={onRefresh} 
           />
         </DialogContent>

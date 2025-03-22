@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -6,12 +5,7 @@ import { toast } from 'sonner';
 const supabaseUrl = 'https://nizvcdssajfpjtncbojx.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5penZjZHNzYWpmcGp0bmNib2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2MTU0ODksImV4cCI6MjA1ODE5MTQ4OX0.5b2Yzfzzzz-C8S6iqhG3SinKszlgjdd4NUxogWIxCLc';
 
-// Function to check if Supabase credentials are configured
-const checkSupabaseConfig = () => {
-  // Since we're using hardcoded credentials now, this always returns true
-  return true;
-};
-
+// Initialize the Supabase client
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export type Center = {
@@ -76,9 +70,10 @@ export const validationRules: Record<string, Record<string, ValidationRule>> = {
   }
 };
 
-// Generic function to handle API errors
+// Generic function to handle API errors with improved logging
 const handleError = (error: any, customMessage?: string) => {
   console.error('API Error:', error);
+  console.error('Error details:', JSON.stringify(error, null, 2));
   toast.error(customMessage || 'An error occurred. Please try again.');
   return null;
 };
@@ -86,10 +81,6 @@ const handleError = (error: any, customMessage?: string) => {
 // Fetch all centers
 export const fetchCenters = async (): Promise<Center[] | null> => {
   try {
-    if (!checkSupabaseConfig()) {
-      throw new Error('Supabase configuration missing or invalid');
-    }
-
     console.log('Fetching centers from Supabase...');
     const { data, error } = await supabase
       .from('centers')
@@ -111,10 +102,6 @@ export const fetchCenters = async (): Promise<Center[] | null> => {
 // Fetch programs by center ID
 export const fetchProgramsByCenter = async (centerId: number): Promise<Program[] | null> => {
   try {
-    if (!checkSupabaseConfig()) {
-      throw new Error('Supabase configuration missing or invalid');
-    }
-
     console.log('Fetching programs for center_id:', centerId);
 
     const { data, error } = await supabase
@@ -149,6 +136,8 @@ const getTableName = (displayName: string): string => {
 // Fetch tables by program ID
 export const fetchTablesByProgram = async (programId: number): Promise<TableInfo[] | null> => {
   try {
+    console.log(`Fetching tables for program_id: ${programId}`);
+    
     // Get the program to get its center_id
     const { data: programData, error: programError } = await supabase
       .from('programs')
@@ -201,7 +190,7 @@ export const fetchTablesByProgram = async (programId: number): Promise<TableInfo
   }
 };
 
-// Fetch all available columns for a table
+// Fetch all available columns for a table with improved error handling
 export const fetchTableColumns = async (tableName: string): Promise<string[] | null> => {
   try {
     console.log(`Fetching columns for table ${tableName}`);
@@ -211,38 +200,43 @@ export const fetchTableColumns = async (tableName: string): Promise<string[] | n
       .from(tableName.toLowerCase())
       .select('*')
       .limit(1);
-      
+    
     if (error) {
       console.error('Error fetching table schema:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       throw error;
     }
     
     // If we have data, extract columns
     if (data && data.length > 0) {
+      console.log(`Columns found for ${tableName}:`, Object.keys(data[0]));
       return Object.keys(data[0]);
     }
     
-    // If table exists but is empty, try fetching the structure differently
-    // This fallback is less accurate but better than nothing
+    // If table exists but is empty, provide default columns based on table name
     console.log('Table exists but is empty, using predefined columns');
     
     if (tableName.toLowerCase() === 'students') {
       return [
-        'id', 'name', 'age', 'grade', 'enrollment_date', 'gender', 'address', 'city',
-        'state', 'postal_code', 'country', 'phone', 'email', 'guardian_name',
-        'guardian_phone', 'guardian_email', 'emergency_contact', 'emergency_phone',
-        'birth_date', 'native_language', 'academic_year', 'admission_date',
-        'current_status', 'previous_school', 'health_conditions', 'blood_group',
-        'allergies', 'medications', 'family_income', 'scholarship_status',
-        'transportation_mode', 'extracurricular_activities', 'remarks', 'profile_image',
-        'center_id', 'program_id'
+        'id', 'first_name', 'last_name', 'photo', 'gender', 'dob', 'primary_diagnosis', 
+        'comorbidity', 'udid', 'student_id', 'enrollment_year', 'status', 'student_email', 
+        'program_id', 'program_2_id', 'number_of_sessions', 'timings', 'days_of_week', 
+        'educator_employee_id', 'secondary_educator_employee_id', 'session_type', 
+        'fathers_name', 'mothers_name', 'blood_group', 'allergies', 'contact_number', 
+        'alt_contact_number', 'parents_email', 'address', 'transport', 'strengths', 
+        'weakness', 'comments', 'created_at', 'center_id'
       ];
     } else if (tableName.toLowerCase() === 'educators') {
       return [
-        'id', 'name', 'subject', 'years_experience', 'email', 'phone', 'address',
-        'hire_date', 'education', 'certifications', 'department', 'position',
-        'salary_grade', 'contract_type', 'specializations', 'teaching_hours',
-        'center_id', 'program_id'
+        'id', 'center_id', 'employee_id', 'name', 'photo', 'designation', 'email', 
+        'phone', 'date_of_birth', 'date_of_joining', 'work_location', 'created_at'
+      ];
+    } else if (tableName.toLowerCase() === 'employees') {
+      return [
+        'id', 'employee_id', 'name', 'gender', 'designation', 'department', 'employment_type',
+        'program_id', 'email', 'phone', 'date_of_birth', 'date_of_joining', 'date_of_leaving',
+        'status', 'work_location', 'emergency_contact_name', 'emergency_contact', 'blood_group',
+        'created_at', 'center_id', 'LOR'
       ];
     } else if (tableName.toLowerCase() === 'courses') {
       return [
@@ -303,10 +297,10 @@ export const validateData = (tableName: string, data: Record<string, any>): { is
   return { isValid, errors };
 };
 
-// Fetch data from a specific table with proper logging
+// Fetch data from a specific table with proper logging and improved error handling
 export const fetchTableData = async (tableName: string, center_id?: number): Promise<any[] | null> => {
   try {
-    console.log(`Fetching data from ${tableName} for center_id: ${center_id}`);
+    console.log(`Fetching data from ${tableName} ${center_id ? `for center_id: ${center_id}` : ''}`);
     
     // Query the actual table
     let query = supabase.from(tableName.toLowerCase()).select('*');
@@ -319,21 +313,22 @@ export const fetchTableData = async (tableName: string, center_id?: number): Pro
     const { data, error } = await query;
     
     if (error) {
-      console.error('Error fetching table data:', error);
+      console.error(`Error fetching data from ${tableName}:`, error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       throw error;
     }
     
-    console.log(`Successfully fetched ${data?.length || 0} records from ${tableName}:`, data);
+    console.log(`Successfully fetched ${data?.length || 0} records from ${tableName}`);
     return data || [];
   } catch (error) {
     return handleError(error, `Failed to fetch data from ${tableName}`);
   }
 };
 
-// Insert a row into a table
-export const insertRow = async (tableName: string, rowData: any): Promise<{ success: boolean; errors?: Record<string, string> }> => {
+// Insert a row into a table with improved error handling and validation
+export const insertRow = async (tableName: string, rowData: any): Promise<{ success: boolean; errors?: Record<string, string>; data?: any }> => {
   try {
-    console.log('Inserting row with data:', rowData);
+    console.log(`Inserting row into ${tableName} with data:`, rowData);
     
     // Validate the data before inserting
     const { isValid, errors } = validateData(tableName, rowData);
@@ -355,7 +350,8 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
       .select();
     
     if (error) {
-      console.error('Insert error:', error);
+      console.error(`Insert error in ${tableName}:`, error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       
       // Show specific error messages
       if (error.message.includes('duplicate key')) {
@@ -369,18 +365,19 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
       return { success: false, errors: { general: error.message } };
     }
     
+    console.log(`Successfully inserted row into ${tableName}:`, data);
     toast.success('Record added successfully');
-    return { success: true };
+    return { success: true, data };
   } catch (error: any) {
     handleError(error, 'Failed to add row');
     return { success: false, errors: { general: error.message } };
   }
 };
 
-// Update a row in a table
-export const updateRow = async (tableName: string, id: number, rowData: any): Promise<{ success: boolean; errors?: Record<string, string> }> => {
+// Update a row in a table with improved error handling and validation
+export const updateRow = async (tableName: string, id: number, rowData: any): Promise<{ success: boolean; errors?: Record<string, string>; data?: any }> => {
   try {
-    console.log('Updating row:', id, 'with data:', rowData);
+    console.log(`Updating row in ${tableName} with id ${id}:`, rowData);
     
     // Validate the data before updating
     const { isValid, errors } = validateData(tableName, rowData);
@@ -398,23 +395,25 @@ export const updateRow = async (tableName: string, id: number, rowData: any): Pr
       .select();
     
     if (error) {
-      console.error('Update error:', error);
+      console.error(`Update error in ${tableName}:`, error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       toast.error(error.message);
       return { success: false, errors: { general: error.message } };
     }
     
+    console.log(`Successfully updated row in ${tableName}:`, data);
     toast.success('Record updated successfully');
-    return { success: true };
+    return { success: true, data };
   } catch (error: any) {
     handleError(error, 'Failed to update row');
     return { success: false, errors: { general: error.message } };
   }
 };
 
-// Delete a row from a table
+// Delete a row from a table with improved error handling
 export const deleteRow = async (tableName: string, id: number): Promise<boolean> => {
   try {
-    console.log('Deleting row:', id, 'from table:', tableName);
+    console.log(`Deleting row with id ${id} from table ${tableName}`);
     
     // Delete from the actual table
     const { error } = await supabase
@@ -423,11 +422,13 @@ export const deleteRow = async (tableName: string, id: number): Promise<boolean>
       .eq('id', id);
     
     if (error) {
-      console.error('Delete error:', error);
+      console.error(`Delete error in ${tableName}:`, error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       toast.error(error.message);
       return false;
     }
     
+    console.log(`Successfully deleted row with id ${id} from ${tableName}`);
     toast.success('Record deleted successfully');
     return true;
   } catch (error) {
@@ -475,6 +476,7 @@ export const bulkInsert = async (tableName: string, rows: any[]): Promise<{ succ
     
     if (error) {
       console.error('Bulk insert error:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       toast.error(error.message);
       return { success: false, message: error.message };
     }
