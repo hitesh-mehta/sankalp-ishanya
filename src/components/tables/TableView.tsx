@@ -41,6 +41,7 @@ const TableView = ({ table }: TableViewProps) => {
   const [detailedViewRow, setDetailedViewRow] = useState<any | null>(null);
   const [isDetailedViewOpen, setIsDetailedViewOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [displayColumns, setDisplayColumns] = useState<string[]>([]);
 
   const loadTableData = async () => {
     setLoading(true);
@@ -53,7 +54,18 @@ const TableView = ({ table }: TableViewProps) => {
       if (tableColumns) {
         console.log(`Columns for ${table.name}:`, tableColumns);
         setAllColumns(tableColumns); // Keep all columns for data operations
-        setColumns(tableColumns); // Use filtered columns for display
+        
+        // For students table, limit displayed columns
+        if (table.name === 'students') {
+          const limitedColumns = tableColumns.filter(col => 
+            ['student_id', 'first_name', 'last_name', 'photo', 'dob', 'contact_number', 'student_email'].includes(col)
+          );
+          setDisplayColumns(limitedColumns);
+          setColumns(limitedColumns);
+        } else {
+          setDisplayColumns(tableColumns);
+          setColumns(tableColumns);
+        }
       } else {
         console.error(`No columns returned for ${table.name}`);
       }
@@ -198,10 +210,18 @@ const TableView = ({ table }: TableViewProps) => {
   };
 
   const handleEditChange = (column: string, value: string) => {
-    setEditingRow({
+    // Update the current data in real-time
+    const updatedEditingRow = {
       ...editingRow,
       [column]: value,
-    });
+    };
+    setEditingRow(updatedEditingRow);
+    
+    // Update the filtered data in real-time to see changes immediately
+    const newFilteredData = filteredData.map(row => 
+      row.id === editingRow.id ? {...row, [column]: value} : row
+    );
+    setFilteredData(newFilteredData);
     
     if (validationErrors[column]) {
       const newErrors = { ...validationErrors };
@@ -315,6 +335,49 @@ const TableView = ({ table }: TableViewProps) => {
            column === 'address';
   };
 
+  // Get placeholder examples based on field name
+  const getPlaceholder = (column: string): string => {
+    const placeholders: Record<string, string> = {
+      first_name: "Enter first name (e.g., John)",
+      last_name: "Enter last name (e.g., Smith)",
+      student_id: "Enter student ID (e.g., S12345)",
+      dob: "YYYY-MM-DD (e.g., 2010-05-20)",
+      date_of_birth: "YYYY-MM-DD (e.g., 1990-01-15)",
+      date_of_joining: "YYYY-MM-DD (e.g., 2022-09-01)",
+      contact_number: "Enter contact number (e.g., 9876543210)",
+      alt_contact_number: "Enter alternate number (e.g., 8765432109)",
+      student_email: "Enter email (e.g., student@example.com)",
+      parents_email: "Enter email (e.g., parent@example.com)",
+      name: "Enter full name (e.g., John Smith)",
+      email: "Enter email (e.g., name@example.com)",
+      phone: "Enter phone number (e.g., 9876543210)",
+      address: "Enter complete address with city and pincode",
+      strengths: "Enter student's strengths and abilities",
+      weakness: "Enter areas needing improvement",
+      comments: "Enter additional observations or notes",
+      primary_diagnosis: "Enter medical diagnosis if applicable",
+      blood_group: "Enter blood group (e.g., A+, B-, O+)",
+      gender: "Enter gender (e.g., Male, Female, Other)",
+      enrollment_year: "Enter year (e.g., 2023)",
+      designation: "Enter job title (e.g., Teacher, Admin)",
+      department: "Enter department (e.g., Science, Math, Admin)",
+      program_id: "Enter program ID number",
+      center_id: "Enter center ID number"
+    };
+    
+    return placeholders[column] || `Enter ${column}`;
+  };
+  
+  // Determine if a field is required
+  const isFieldRequired = (column: string): boolean => {
+    const requiredFields = [
+      'first_name', 'last_name', 'name', 'center_id', 'program_id', 
+      'email', 'student_id', 'employee_id', 'student_email', 'center_id'
+    ];
+    
+    return requiredFields.includes(column);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -376,34 +439,36 @@ const TableView = ({ table }: TableViewProps) => {
           )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border rounded-lg bg-gray-50 border-ishanya-green/20 shadow-inner">
-          {columns
-            .filter(column => column !== 'created_at')
-            .map(column => (
-              <div key={`filter-${column}`} className="space-y-2">
-                <Label htmlFor={`filter-${column}`} className="text-xs font-medium text-ishanya-green">
-                  Filter by {column}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id={`filter-${column}`}
-                    placeholder={`Filter ${column}...`}
-                    value={filterValues[column] || ''}
-                    onChange={(e) => handleFilterChange(column, e.target.value)}
-                    className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
-                  />
-                  {filterValues[column] && (
-                    <button 
-                      className="absolute right-3 top-3" 
-                      onClick={() => handleFilterChange(column, '')}
-                    >
-                      <X className="h-4 w-4 text-gray-400 hover:text-gray-700" />
-                    </button>
-                  )}
+        {isFilterOpen && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border rounded-lg bg-gray-50 border-ishanya-green/20 shadow-inner">
+            {displayColumns
+              .filter(column => column !== 'created_at')
+              .map(column => (
+                <div key={`filter-${column}`} className="space-y-2">
+                  <Label htmlFor={`filter-${column}`} className="text-xs font-medium text-ishanya-green">
+                    Filter by {column}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id={`filter-${column}`}
+                      placeholder={`Filter ${column}...`}
+                      value={filterValues[column] || ''}
+                      onChange={(e) => handleFilterChange(column, e.target.value)}
+                      className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
+                    />
+                    {filterValues[column] && (
+                      <button 
+                        className="absolute right-3 top-3" 
+                        onClick={() => handleFilterChange(column, '')}
+                      >
+                        <X className="h-4 w-4 text-gray-400 hover:text-gray-700" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-        </div>
+              ))}
+          </div>
+        )}
       </div>
       
       <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
@@ -411,7 +476,7 @@ const TableView = ({ table }: TableViewProps) => {
           <Table>
             <TableHeader>
               <TableRow className="bg-ishanya-green/10">
-                {columns
+                {displayColumns
                   .filter(column => column !== 'created_at')
                   .map((column) => (
                     <TableHead key={column} className="text-ishanya-green font-medium">
@@ -424,14 +489,14 @@ const TableView = ({ table }: TableViewProps) => {
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + 1} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={displayColumns.length + 1} className="text-center py-8 text-gray-500">
                     No data matching current filters
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((row) => (
                   <TableRow key={row.id} className="cursor-pointer hover:bg-gray-50 transition-colors">
-                    {columns
+                    {displayColumns
                       .filter(column => column !== 'created_at')
                       .map((column) => (
                         <TableCell 
@@ -443,7 +508,7 @@ const TableView = ({ table }: TableViewProps) => {
                             <div>
                               {shouldUseTextarea(column) ? (
                                 <Textarea
-                                  value={row[column] !== null && row[column] !== undefined ? String(row[column] || '') : ''}
+                                  value={editingRow[column] !== null && editingRow[column] !== undefined ? String(editingRow[column] || '') : ''}
                                   onChange={(e) => handleEditChange(column, e.target.value)}
                                   onClick={(e) => e.stopPropagation()}
                                   className={`min-h-[100px] border-ishanya-green/30 focus-visible:ring-ishanya-green ${
@@ -452,7 +517,7 @@ const TableView = ({ table }: TableViewProps) => {
                                 />
                               ) : (
                                 <Input
-                                  value={row[column] !== null && row[column] !== undefined ? String(row[column] || '') : ''}
+                                  value={editingRow[column] !== null && editingRow[column] !== undefined ? String(editingRow[column] || '') : ''}
                                   onChange={(e) => handleEditChange(column, e.target.value)}
                                   onClick={(e) => e.stopPropagation()}
                                   className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
@@ -469,7 +534,7 @@ const TableView = ({ table }: TableViewProps) => {
                               <span className="truncate max-w-[200px]">
                                 {row[column] !== null && row[column] !== undefined ? String(row[column]) : ''}
                               </span>
-                              {column === columns.filter(c => c !== 'created_at')[columns.filter(c => c !== 'created_at').length - 1] && (
+                              {column === displayColumns.filter(c => c !== 'created_at')[displayColumns.filter(c => c !== 'created_at').length - 1] && (
                                 <ChevronRight className="h-4 w-4 ml-2 text-gray-400" />
                               )}
                             </div>
@@ -532,25 +597,18 @@ const TableView = ({ table }: TableViewProps) => {
             {allColumns
               .filter(column => column !== 'id' && column !== 'created_at')
               .map((column) => {
-                const isRequired = (
-                  column === 'center_id' || 
-                  column === 'program_id' || 
-                  column === 'name' || 
-                  column === 'first_name' || 
-                  column === 'last_name' || 
-                  column === 'email'
-                );
+                const required = isFieldRequired(column);
                 
                 return (
                   <div key={column} className="space-y-2">
                     <Label htmlFor={`insert-${column}`} className="text-sm text-gray-700 flex items-center">
                       {column}
-                      {isRequired && <span className="text-red-500 ml-1">*</span>}
+                      {required && <span className="text-red-500 ml-1">*</span>}
                     </Label>
                     {shouldUseTextarea(column) ? (
                       <Textarea
                         id={`insert-${column}`}
-                        placeholder={`Enter ${column}`}
+                        placeholder={getPlaceholder(column)}
                         value={newRow[column] || ''}
                         onChange={(e) => handleInsertChange(column, e.target.value)}
                         className={`min-h-[100px] border-ishanya-green/30 focus-visible:ring-ishanya-green ${
@@ -560,7 +618,7 @@ const TableView = ({ table }: TableViewProps) => {
                     ) : (
                       <Input
                         id={`insert-${column}`}
-                        placeholder={`Enter ${column}`}
+                        placeholder={getPlaceholder(column)}
                         value={newRow[column] || ''}
                         onChange={(e) => handleInsertChange(column, e.target.value)}
                         className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
