@@ -353,7 +353,7 @@ const processFieldData = (data: Record<string, any>): Record<string, any> => {
       }
     }
     
-    // Handle numeric fields
+    // Handle numeric fields - FIXED: empty string should be set to null, not converted to 0
     if (typeof value === 'string' && 
         (key.includes('_id') || key.includes('number') || key.includes('year'))) {
       if (value.trim() !== '') {
@@ -361,6 +361,9 @@ const processFieldData = (data: Record<string, any>): Record<string, any> => {
         if (!isNaN(numValue)) {
           result[key] = numValue;
         }
+      } else {
+        // If empty string, set to null for numeric fields
+        result[key] = null;
       }
     }
   }
@@ -444,6 +447,8 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
         toast.error('Invalid array format. Please use a comma-separated list or remove brackets');
       } else if (error.message.includes('invalid input syntax for type timestamp')) {
         toast.error('Invalid date format. Please use YYYY-MM-DD or leave empty');
+      } else if (error.message.includes('invalid input syntax for type integer')) {
+        toast.error('Invalid number format. Please enter a valid number or leave empty');
       } else {
         toast.error(error.message);
       }
@@ -499,6 +504,8 @@ export const updateRow = async (tableName: string, id: number, rowData: any): Pr
         toast.error('Invalid array format. Please use a comma-separated list or remove brackets');
       } else if (error.message.includes('invalid input syntax for type timestamp')) {
         toast.error('Invalid date format. Please use YYYY-MM-DD or leave empty');
+      } else if (error.message.includes('invalid input syntax for type integer')) {
+        toast.error('Invalid number format. Please enter a valid number or leave empty');
       } else {
         toast.error(error.message);
       }
