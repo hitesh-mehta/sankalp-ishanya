@@ -6,10 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import HRDashboard from "./pages/HRDashboard";
+import TeacherDashboard from "./pages/TeacherDashboard";
+import ParentDashboard from "./pages/ParentDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import { isAuthenticated } from "./lib/auth";
+import { isAuthenticated, getUserRole } from "./lib/auth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +24,7 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const isLoggedIn = isAuthenticated();
+  const userRole = getUserRole();
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -32,29 +35,60 @@ const App = () => {
           <Routes>
             {/* Public route */}
             <Route path="/login" element={
-              isLoggedIn ? <Navigate to="/" /> : <Login />
+              isLoggedIn ? <Navigate to={getDefaultRoute(userRole)} /> : <Login />
             } />
             
-            {/* Protected routes */}
+            {/* Admin/default dashboard - only for administrators */}
             <Route path="/" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['administrator']}>
                 <Index />
               </ProtectedRoute>
             } />
             
+            {/* HR Dashboard - only for HR */}
             <Route path="/hr" element={
-              <ProtectedRoute requireAdmin={true}>
+              <ProtectedRoute allowedRoles={['hr']}>
                 <HRDashboard />
               </ProtectedRoute>
             } />
             
-            {/* Redirect for authenticated users */}
+            {/* Teacher Dashboard - only for teachers */}
+            <Route path="/teacher" element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherDashboard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Parent Dashboard - only for parents */}
+            <Route path="/parent" element={
+              <ProtectedRoute allowedRoles={['parent']}>
+                <ParentDashboard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Not found routes */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
+};
+
+// Helper function to determine default route based on user role
+const getDefaultRoute = (role: string | null): string => {
+  switch (role) {
+    case 'administrator':
+      return '/';
+    case 'hr':
+      return '/hr';
+    case 'teacher':
+      return '/teacher';
+    case 'parent':
+      return '/parent';
+    default:
+      return '/login';
+  }
 };
 
 export default App;

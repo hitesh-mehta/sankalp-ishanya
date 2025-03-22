@@ -2,7 +2,7 @@
 import { PropsWithChildren } from 'react';
 import Navbar from './Navbar';
 import Header from './Header';
-import DashboardNav from './DashboardNav';
+import { DashboardNav } from './DashboardNav';
 
 type LayoutProps = PropsWithChildren<{
   title: string;

@@ -10,11 +10,16 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  password: z.string().min(4, { message: "Password must be at least 4 characters" }), // Reduced from 6 to 4
+  role: z.string({ required_error: "Please select a role" })
+    .refine(val => ['administrator', 'hr', 'teacher', 'parent'].includes(val), {
+      message: "Invalid role selected"
+    })
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -28,6 +33,7 @@ const Login = () => {
     defaultValues: {
       email: '',
       password: '',
+      role: ''
     },
   });
 
@@ -35,7 +41,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const result = await authenticateUser(data.email, data.password);
+      const result = await authenticateUser(data.email, data.password, data.role);
       
       if (result.success) {
         toast.success("Login successful");
@@ -43,11 +49,22 @@ const Login = () => {
         // Store user info in localStorage
         localStorage.setItem('user', JSON.stringify(result.user));
         
-        // Redirect based on role (if admin, go to HR dashboard)
-        if (result.user.isAdmin) {
-          navigate('/hr');
-        } else {
-          navigate('/');
+        // Redirect based on role
+        switch(result.user.role) {
+          case 'administrator':
+            navigate('/');
+            break;
+          case 'hr':
+            navigate('/hr');
+            break;
+          case 'teacher':
+            navigate('/teacher');
+            break;
+          case 'parent':
+            navigate('/parent');
+            break;
+          default:
+            navigate('/');
         }
       } else {
         toast.error(result.message || "Invalid credentials");
@@ -66,7 +83,7 @@ const Login = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center font-bold">Ishanya Foundation</CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access the admin dashboard
+            Enter your credentials to access the dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,8 +109,34 @@ const Login = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="******" {...field} />
+                      <Input type="password" placeholder="******" showPasswordToggle {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="administrator">Administrator</SelectItem>
+                        <SelectItem value="hr">HR</SelectItem>
+                        <SelectItem value="teacher">Teacher</SelectItem>
+                        <SelectItem value="parent">Parent</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
