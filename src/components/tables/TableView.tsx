@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Edit, Trash, Save, Search, Filter, X, ChevronRight } from 'lucide-react';
+import { Edit, Trash, Save, Search, Filter, X, ChevronRight, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Table,
@@ -225,13 +225,13 @@ const TableView = ({ table }: TableViewProps) => {
       />
       
       {/* Search and Filter Controls */}
-      <div className="mb-6 flex flex-col gap-4">
+      <div className="mb-6 space-y-4">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search table..."
-              className="pl-10"
+              className="pl-10 border-ishanya-green/30 focus-visible:ring-ishanya-green"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -240,14 +240,14 @@ const TableView = ({ table }: TableViewProps) => {
                 className="absolute right-3 top-3" 
                 onClick={() => setSearchTerm('')}
               >
-                <X className="h-4 w-4 text-gray-400" />
+                <X className="h-4 w-4 text-gray-400 hover:text-gray-700" />
               </button>
             )}
           </div>
           <Button 
             variant="outline" 
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={isFilterOpen ? "bg-gray-100" : ""}
+            className={isFilterOpen ? "bg-gray-100 border-ishanya-green/50 text-ishanya-green" : "border-ishanya-green/50 text-ishanya-green"}
           >
             <Filter className="h-4 w-4 mr-2" />
             Filters
@@ -257,6 +257,7 @@ const TableView = ({ table }: TableViewProps) => {
               variant="ghost" 
               onClick={clearFilters}
               size="sm"
+              className="text-ishanya-green hover:text-ishanya-green/90 hover:bg-ishanya-green/10"
             >
               Clear All
             </Button>
@@ -265,10 +266,10 @@ const TableView = ({ table }: TableViewProps) => {
         
         {/* Filter Panel */}
         {isFilterOpen && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border rounded-lg bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border rounded-lg bg-gray-50 border-ishanya-green/20 shadow-inner">
             {columns.map(column => (
               <div key={`filter-${column}`} className="space-y-2">
-                <Label htmlFor={`filter-${column}`} className="text-xs font-medium">
+                <Label htmlFor={`filter-${column}`} className="text-xs font-medium text-ishanya-green">
                   Filter by {column}
                 </Label>
                 <div className="relative">
@@ -277,13 +278,14 @@ const TableView = ({ table }: TableViewProps) => {
                     placeholder={`Filter ${column}...`}
                     value={filterValues[column] || ''}
                     onChange={(e) => handleFilterChange(column, e.target.value)}
+                    className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
                   />
                   {filterValues[column] && (
                     <button 
                       className="absolute right-3 top-3" 
                       onClick={() => handleFilterChange(column, '')}
                     >
-                      <X className="h-4 w-4 text-gray-400" />
+                      <X className="h-4 w-4 text-gray-400 hover:text-gray-700" />
                     </button>
                   )}
                 </div>
@@ -293,15 +295,17 @@ const TableView = ({ table }: TableViewProps) => {
         )}
       </div>
       
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-ishanya-green/10">
                 {columns.map((column) => (
-                  <TableHead key={column}>{column}</TableHead>
+                  <TableHead key={column} className="text-ishanya-green font-medium">
+                    {column}
+                  </TableHead>
                 ))}
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead className="w-28 text-ishanya-green font-medium">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -313,21 +317,23 @@ const TableView = ({ table }: TableViewProps) => {
                 </TableRow>
               ) : (
                 filteredData.map((row) => (
-                  <TableRow key={row.id} className="cursor-pointer hover:bg-gray-50">
+                  <TableRow key={row.id} className="cursor-pointer hover:bg-gray-50 transition-colors">
                     {columns.map((column) => (
                       <TableCell 
                         key={`${row.id}-${column}`}
                         onClick={() => handleViewDetails(row)}
+                        className="py-3"
                       >
                         {isEditing && editingRow?.id === row.id ? (
                           <Input
                             value={editingRow[column] || ''}
                             onChange={(e) => handleEditChange(column, e.target.value)}
                             onClick={(e) => e.stopPropagation()}
+                            className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
                           />
                         ) : (
                           <div className="flex items-center">
-                            <span>{String(row[column] ?? '')}</span>
+                            <span className="truncate max-w-[200px]">{String(row[column] ?? '')}</span>
                             {column === columns[columns.length - 1] && (
                               <ChevronRight className="h-4 w-4 ml-2 text-gray-400" />
                             )}
@@ -337,6 +343,14 @@ const TableView = ({ table }: TableViewProps) => {
                     ))}
                     <TableCell>
                       <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetails(row)}
+                          className="h-8 px-2 text-ishanya-green border-ishanya-green hover:bg-ishanya-green/10"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         {isEditing && editingRow?.id === row.id ? (
                           <Button
                             size="sm"
@@ -378,26 +392,27 @@ const TableView = ({ table }: TableViewProps) => {
       <Dialog open={isInsertDialogOpen} onOpenChange={setIsInsertDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Insert New Row</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-ishanya-green">Insert New Row</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
             {allColumns
               .filter(column => column !== 'id') // Don't show ID field for insertion
               .map((column) => (
                 <div key={column} className="space-y-2">
-                  <Label htmlFor={`insert-${column}`}>{column}</Label>
+                  <Label htmlFor={`insert-${column}`} className="text-sm text-gray-700">{column}</Label>
                   <Input
                     id={`insert-${column}`}
                     placeholder={`Enter ${column}`}
                     value={newRow[column] || ''}
                     onChange={(e) => handleInsertChange(column, e.target.value)}
+                    className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
                   />
                 </div>
               ))}
             <div className="col-span-1 md:col-span-2 mt-4">
               <Button
                 onClick={handleInsertSubmit}
-                className="w-full bg-ishanya-green hover:bg-ishanya-green/90"
+                className="w-full bg-ishanya-green hover:bg-ishanya-green/90 shadow-md transition-all duration-300 hover:shadow-lg"
               >
                 Insert Row
               </Button>
@@ -410,16 +425,16 @@ const TableView = ({ table }: TableViewProps) => {
       <Dialog open={isDetailedViewOpen} onOpenChange={setIsDetailedViewOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {detailedViewRow ? `Student: ${detailedViewRow.name || 'Details'}` : 'Row Details'}
+            <DialogTitle className="text-xl font-semibold text-ishanya-green">
+              {detailedViewRow ? `${table.name.replace('_', ' ')}: ${detailedViewRow.name || 'Details'}` : 'Row Details'}
             </DialogTitle>
           </DialogHeader>
           {detailedViewRow && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-2">
               {allColumns.map(column => (
                 <div key={column} className="space-y-1 border-b pb-2">
                   <Label className="text-xs text-gray-500">{column}</Label>
-                  <div className="font-medium">
+                  <div className="font-medium text-gray-800">
                     {detailedViewRow[column] !== undefined ? String(detailedViewRow[column]) : '-'}
                   </div>
                 </div>
@@ -429,8 +444,11 @@ const TableView = ({ table }: TableViewProps) => {
           <div className="flex justify-end mt-4">
             <Button
               variant="outline"
-              onClick={() => handleEditClick(detailedViewRow)}
-              className="mr-2"
+              onClick={() => {
+                handleEditClick(detailedViewRow);
+                setIsDetailedViewOpen(false);
+              }}
+              className="mr-2 border-ishanya-green text-ishanya-green hover:bg-ishanya-green/10"
             >
               <Edit className="h-4 w-4 mr-2" />
               Edit

@@ -2,9 +2,10 @@
 import { useState, useRef } from 'react';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
-import { Upload, Check, AlertCircle } from 'lucide-react';
-import { bulkInsert } from '@/lib/api';
+import { Upload, Check, AlertCircle, FileSpreadsheet } from 'lucide-react';
+import { bulkInsert, fetchTableColumns } from '@/lib/api';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import { toast } from 'sonner';
 
 type CsvUploadProps = {
   tableName: string;
@@ -16,7 +17,19 @@ const CsvUpload = ({ tableName, onSuccess }: CsvUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tableColumns, setTableColumns] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch table columns on component mount
+  useState(() => {
+    const getColumns = async () => {
+      const columns = await fetchTableColumns(tableName);
+      if (columns) {
+        setTableColumns(columns);
+      }
+    };
+    getColumns();
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -64,9 +77,22 @@ const CsvUpload = ({ tableName, onSuccess }: CsvUploadProps) => {
             return;
           }
           
+          // Validate columns against table schema
+          if (tableColumns.length > 0) {
+            const csvColumns = Object.keys(results.data[0]);
+            const missingColumns = tableColumns.filter(col => col !== 'id' && !csvColumns.includes(col));
+            
+            if (missingColumns.length > 0) {
+              toast.warning(`CSV is missing some columns: ${missingColumns.join(', ')}`, {
+                description: "Data will still be inserted but some fields will be empty."
+              });
+            }
+          }
+          
           const success = await bulkInsert(tableName, results.data as any[]);
           
           if (success) {
+            toast.success(`Successfully uploaded ${results.data.length} rows to ${tableName}`);
             setFile(null);
             setPreviewData(null);
             if (fileInputRef.current) {
@@ -93,11 +119,11 @@ const CsvUpload = ({ tableName, onSuccess }: CsvUploadProps) => {
       <div className="flex items-center justify-center w-full">
         <label
           htmlFor="csv-file"
-          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
+          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-ishanya-green/50 transition-all duration-300"
         >
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
-            <Upload className="w-8 h-8 mb-2 text-gray-500" />
-            <p className="mb-2 text-sm text-gray-500">
+            <FileSpreadsheet className="w-10 h-10 mb-2 text-ishanya-green" />
+            <p className="mb-2 text-sm text-gray-700">
               <span className="font-semibold">Click to upload</span> or drag and drop
             </p>
             <p className="text-xs text-gray-500">CSV files only</p>
@@ -121,12 +147,12 @@ const CsvUpload = ({ tableName, onSuccess }: CsvUploadProps) => {
       )}
       
       {previewData && previewData.length > 0 && (
-        <div className="rounded-md border overflow-x-auto max-h-40">
+        <div className="rounded-md border overflow-x-auto max-h-40 shadow-inner">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-700">
+            <thead className="bg-ishanya-green/10 text-ishanya-green">
               <tr>
                 {Object.keys(previewData[0]).map((header) => (
-                  <th key={header} className="px-4 py-2 text-left">
+                  <th key={header} className="px-4 py-2 text-left font-medium">
                     {header}
                   </th>
                 ))}
@@ -134,7 +160,7 @@ const CsvUpload = ({ tableName, onSuccess }: CsvUploadProps) => {
             </thead>
             <tbody>
               {previewData.map((row, index) => (
-                <tr key={index} className="border-t">
+                <tr key={index} className="border-t hover:bg-gray-50">
                   {Object.values(row).map((cell, cellIndex) => (
                     <td key={cellIndex} className="px-4 py-2">
                       {String(cell)}
@@ -151,7 +177,7 @@ const CsvUpload = ({ tableName, onSuccess }: CsvUploadProps) => {
         <Button
           onClick={handleUpload}
           disabled={!file || uploading}
-          className="bg-ishanya-green hover:bg-ishanya-green/90"
+          className="bg-ishanya-green hover:bg-ishanya-green/90 shadow-md transition-all duration-300 hover:shadow-lg"
         >
           {uploading ? (
             <>

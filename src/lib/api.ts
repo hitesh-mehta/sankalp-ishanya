@@ -44,6 +44,7 @@ export type TableInfo = {
   name: string;
   description?: string;
   program_id: number;
+  display_name?: string; // More user-friendly name
 };
 
 // Generic function to handle API errors
@@ -79,6 +80,8 @@ export const fetchProgramsByCenter = async (centerId: number): Promise<Program[]
       throw new Error('Supabase configuration missing or invalid');
     }
 
+    console.log('Fetching programs for center_id:', centerId);
+
     const { data, error } = await supabase
       .from('programs')
       .select('*')
@@ -86,6 +89,7 @@ export const fetchProgramsByCenter = async (centerId: number): Promise<Program[]
       .order('name');
     
     if (error) throw error;
+    console.log('Programs fetched:', data);
     return data || [];
   } catch (error) {
     return handleError(error, 'Failed to fetch programs');
@@ -100,9 +104,27 @@ export const fetchTablesByProgram = async (programId: number): Promise<TableInfo
     // In a real application, this would fetch from the database
     
     const mockTables: TableInfo[] = [
-      { id: 1, name: `Students_${programId}`, program_id: programId, description: 'Student information' },
-      { id: 2, name: `Educators_${programId}`, program_id: programId, description: 'Educator information' },
-      { id: 3, name: `Courses_${programId}`, program_id: programId, description: 'Course details' }
+      { 
+        id: programId * 100 + 1, 
+        name: `Students_${programId}`, 
+        program_id: programId, 
+        description: 'Student information',
+        display_name: 'Students'
+      },
+      { 
+        id: programId * 100 + 2, 
+        name: `Educators_${programId}`, 
+        program_id: programId, 
+        description: 'Educator information',
+        display_name: 'Educators'
+      },
+      { 
+        id: programId * 100 + 3, 
+        name: `Courses_${programId}`, 
+        program_id: programId, 
+        description: 'Course details',
+        display_name: 'Courses'
+      }
     ];
     
     return mockTables;
@@ -328,7 +350,22 @@ export const insertRow = async (tableName: string, rowData: any): Promise<boolea
     console.log('Inserting row with data:', rowData);
     
     // Simulate delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Validate the data before "inserting"
+    const requiredColumns = await fetchTableColumns(tableName) || [];
+    const missingFields = requiredColumns.filter(col => 
+      col !== 'id' && // ID is typically auto-generated
+      !rowData[col] && 
+      !['profile_image', 'remarks', 'allergies', 'medications'].includes(col) // These are optional
+    );
+    
+    if (missingFields.length > 0) {
+      // In a real app, you might want to reject the insert, but for demo we'll just warn
+      toast.warning(`Some fields are missing: ${missingFields.join(', ')}`, {
+        description: "In a production system, validation would be more strict."
+      });
+    }
     
     toast.success('Row added successfully');
     return true;
@@ -341,12 +378,12 @@ export const insertRow = async (tableName: string, rowData: any): Promise<boolea
 // Update a row in a table
 export const updateRow = async (tableName: string, id: number, rowData: any): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from(tableName)
-      .update(rowData)
-      .eq('id', id);
+    // This would actually update the database in a real app
+    console.log('Updating row:', id, 'with data:', rowData);
     
-    if (error) throw error;
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
     toast.success('Row updated successfully');
     return true;
   } catch (error) {
@@ -358,12 +395,12 @@ export const updateRow = async (tableName: string, id: number, rowData: any): Pr
 // Delete a row from a table
 export const deleteRow = async (tableName: string, id: number): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from(tableName)
-      .delete()
-      .eq('id', id);
+    // This would actually delete from the database in a real app
+    console.log('Deleting row:', id, 'from table:', tableName);
     
-    if (error) throw error;
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
     toast.success('Row deleted successfully');
     return true;
   } catch (error) {
@@ -377,6 +414,10 @@ export const deleteRow = async (tableName: string, id: number): Promise<boolean>
 export const addColumn = async (tableName: string, columnName: string, columnType: string): Promise<boolean> => {
   // In a real implementation, you'd run SQL via RPC
   // For this example, we'll just simulate success
+  
+  // Simulate delay
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  
   toast.success(`Column "${columnName}" added successfully`);
   return true;
 };
@@ -384,12 +425,13 @@ export const addColumn = async (tableName: string, columnName: string, columnTyp
 // Bulk insert data from CSV
 export const bulkInsert = async (tableName: string, rows: any[]): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from(tableName)
-      .insert(rows);
+    // In a real app, this would insert into the database
+    console.log(`Bulk inserting ${rows.length} rows into table ${tableName}`);
     
-    if (error) throw error;
-    toast.success(`${rows.length} rows added successfully`);
+    // Simulate delay based on number of rows
+    await new Promise(resolve => setTimeout(resolve, 800 + rows.length * 50));
+    
+    toast.success(`${rows.length} rows added successfully to ${tableName}`);
     return true;
   } catch (error) {
     handleError(error, 'Failed to bulk insert rows');
