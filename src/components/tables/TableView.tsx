@@ -47,31 +47,46 @@ const TableView = ({ table }: TableViewProps) => {
     
     try {
       // Fetch all possible columns for this table first
+      console.log(`Fetching columns for table ${table.name}`);
       const tableColumns = await fetchTableColumns(table.name);
       if (tableColumns) {
+        console.log(`Columns for ${table.name}:`, tableColumns);
         setAllColumns(tableColumns);
+      } else {
+        console.error(`No columns returned for ${table.name}`);
       }
       
       // Fetch data with center_id filter if available
+      console.log(`Fetching data from ${table.name} with center_id: ${table.center_id}`);
       const result = await fetchTableData(table.name, table.center_id);
       if (result) {
-        console.log(`Loaded ${result.length} records from ${table.name}`);
+        console.log(`Loaded ${result.length} records from ${table.name}:`, result);
         setData(result);
         setFilteredData(result);
         
-        // Extract display columns from the first row (basic info only)
+        // Extract display columns based on table type
         if (result.length > 0) {
-          // For student tables, show a subset of columns for the initial view
           if (table.name.toLowerCase().includes('student')) {
-            const basicColumns = ['id', 'name', 'age', 'grade', 'enrollment_date', 'center_id', 'program_id'];
-            setColumns(basicColumns.filter(col => Object.keys(result[0]).includes(col)));
+            // Specific columns for students
+            const studentColumns = [
+              'id', 'student_id', 'first_name', 'last_name', 'email', 
+              'program_id', 'center_id', 'primary_diagnosis', 'status'
+            ];
+            setColumns(studentColumns.filter(col => Object.keys(result[0]).includes(col)));
+          } else if (table.name.toLowerCase().includes('educator')) {
+            // Specific columns for educators
+            const educatorColumns = [
+              'id', 'employee_id', 'name', 'email', 'designation', 
+              'phone', 'center_id', 'program_id'
+            ];
+            setColumns(educatorColumns.filter(col => Object.keys(result[0]).includes(col)));
           } else {
-            // For other tables, show 6-8 most important columns
+            // For other tables, show important columns
             const availableColumns = Object.keys(result[0]);
-            const importantColumns = ['id', 'name', 'subject', 'email', 'phone', 'center_id', 'program_id']
-              .filter(col => availableColumns.includes(col));
+            const importantColumns = [
+              'id', 'name', 'subject', 'email', 'phone', 'center_id', 'program_id'
+            ].filter(col => availableColumns.includes(col));
             
-            // Limit to 6-8 columns for better UI
             setColumns(importantColumns.length >= 5 ? importantColumns : availableColumns.slice(0, 6));
           }
         } else {
@@ -79,11 +94,12 @@ const TableView = ({ table }: TableViewProps) => {
           setColumns(tableColumns?.slice(0, 6) || ['id', 'name', 'center_id', 'program_id']);
         }
       } else {
+        console.error(`Failed to load data from ${table.name}`);
         setError('Failed to load table data. Please try again.');
       }
     } catch (err) {
+      console.error('Error in loadTableData:', err);
       setError('An unexpected error occurred. Please try again.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -132,18 +148,28 @@ const TableView = ({ table }: TableViewProps) => {
   // Handle row deletion
   const handleDeleteRow = async (id: number) => {
     if (window.confirm(`Are you sure you want to delete this record?`)) {
-      const success = await deleteRow(table.name, id);
-      if (success) {
-        loadTableData();
+      try {
+        console.log(`Deleting row with id ${id} from ${table.name}`);
+        const success = await deleteRow(table.name, id);
+        if (success) {
+          toast.success('Record deleted successfully');
+          loadTableData();
+        } else {
+          toast.error('Failed to delete record');
+        }
+      } catch (err) {
+        console.error('Error in handleDeleteRow:', err);
+        toast.error('An error occurred while deleting the record');
       }
     }
   };
 
   // Handle row editing
   const handleEditClick = (row: any) => {
+    console.log('Editing row:', row);
     setEditingRow({ ...row });
     setIsEditing(true);
-    setValidationErrors({}); // Clear any previous validation errors
+    setValidationErrors({});
   };
 
   const handleEditChange = (column: string, value: string) => {
@@ -163,28 +189,49 @@ const TableView = ({ table }: TableViewProps) => {
   const handleSaveEdit = async () => {
     if (!editingRow) return;
     
-    // Validate the data
-    const { isValid, errors } = validateData(table.name, editingRow);
-    
-    if (!isValid) {
-      setValidationErrors(errors);
-      toast.error('Please correct the validation errors');
-      return;
-    }
-    
-    const result = await updateRow(table.name, editingRow.id, editingRow);
-    if (result.success) {
-      setIsEditing(false);
-      setEditingRow(null);
-      setValidationErrors({});
-      loadTableData();
+    try {
+      // Format values appropriately based on column types
+      const formattedData = { ...editingRow };
       
-      // Close detailed view if open
-      if (isDetailedViewOpen) {
-        setIsDetailedViewOpen(false);
+      // Convert numeric fields to numbers
+      ['center_id', 'program_id', 'age', 'grade', 'enrollment_year'].forEach(field => {
+        if (formattedData[field] !== undefined && formattedData[field] !== '') {
+          const numValue = Number(formattedData[field]);
+          formattedData[field] = isNaN(numValue) ? formattedData[field] : numValue;
+        }
+      });
+      
+      console.log(`Updating row in ${table.name}:`, formattedData);
+      
+      // Validate the data
+      const { isValid, errors } = validateData(table.name, formattedData);
+      
+      if (!isValid) {
+        console.error('Validation errors:', errors);
+        setValidationErrors(errors);
+        toast.error('Please correct the validation errors');
+        return;
       }
-    } else if (result.errors) {
-      setValidationErrors(result.errors);
+      
+      const result = await updateRow(table.name, formattedData.id, formattedData);
+      if (result.success) {
+        toast.success('Record updated successfully');
+        setIsEditing(false);
+        setEditingRow(null);
+        setValidationErrors({});
+        loadTableData();
+        
+        // Close detailed view if open
+        if (isDetailedViewOpen) {
+          setIsDetailedViewOpen(false);
+        }
+      } else if (result.errors) {
+        console.error('Update errors:', result.errors);
+        setValidationErrors(result.errors);
+      }
+    } catch (err) {
+      console.error('Error in handleSaveEdit:', err);
+      toast.error('An error occurred while updating the record');
     }
   };
 
@@ -208,9 +255,10 @@ const TableView = ({ table }: TableViewProps) => {
       }
     });
     
+    console.log('New row template:', initialNewRow);
     setNewRow(initialNewRow);
     setIsInsertDialogOpen(true);
-    setValidationErrors({}); // Clear any previous validation errors
+    setValidationErrors({});
   };
 
   const handleInsertChange = (column: string, value: string) => {
@@ -228,23 +276,44 @@ const TableView = ({ table }: TableViewProps) => {
   };
 
   const handleInsertSubmit = async () => {
-    // Validate the data
-    const { isValid, errors } = validateData(table.name, newRow);
-    
-    if (!isValid) {
-      setValidationErrors(errors);
-      toast.error('Please correct the validation errors');
-      return;
-    }
-    
-    const result = await insertRow(table.name, newRow);
-    if (result.success) {
-      setIsInsertDialogOpen(false);
-      setNewRow({});
-      setValidationErrors({});
-      loadTableData();
-    } else if (result.errors) {
-      setValidationErrors(result.errors);
+    try {
+      // Format values appropriately based on column types
+      const formattedData = { ...newRow };
+      
+      // Convert numeric fields to numbers
+      ['center_id', 'program_id', 'age', 'grade', 'enrollment_year'].forEach(field => {
+        if (formattedData[field] !== undefined && formattedData[field] !== '') {
+          const numValue = Number(formattedData[field]);
+          formattedData[field] = isNaN(numValue) ? formattedData[field] : numValue;
+        }
+      });
+      
+      console.log(`Inserting row into ${table.name}:`, formattedData);
+      
+      // Validate the data
+      const { isValid, errors } = validateData(table.name, formattedData);
+      
+      if (!isValid) {
+        console.error('Validation errors:', errors);
+        setValidationErrors(errors);
+        toast.error('Please correct the validation errors');
+        return;
+      }
+      
+      const result = await insertRow(table.name, formattedData);
+      if (result.success) {
+        toast.success('Record added successfully');
+        setIsInsertDialogOpen(false);
+        setNewRow({});
+        setValidationErrors({});
+        loadTableData();
+      } else if (result.errors) {
+        console.error('Insert errors:', result.errors);
+        setValidationErrors(result.errors);
+      }
+    } catch (err) {
+      console.error('Error in handleInsertSubmit:', err);
+      toast.error('An error occurred while adding the record');
     }
   };
 
@@ -388,7 +457,7 @@ const TableView = ({ table }: TableViewProps) => {
                         {isEditing && editingRow?.id === row.id ? (
                           <div>
                             <Input
-                              value={editingRow[column] || ''}
+                              value={editingRow[column] !== null ? editingRow[column] || '' : ''}
                               onChange={(e) => handleEditChange(column, e.target.value)}
                               onClick={(e) => e.stopPropagation()}
                               className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
@@ -401,7 +470,7 @@ const TableView = ({ table }: TableViewProps) => {
                           </div>
                         ) : (
                           <div className="flex items-center">
-                            <span className="truncate max-w-[200px]">{String(row[column] ?? '')}</span>
+                            <span className="truncate max-w-[200px]">{row[column] !== null ? String(row[column] || '') : ''}</span>
                             {column === columns[columns.length - 1] && (
                               <ChevronRight className="h-4 w-4 ml-2 text-gray-400" />
                             )}
@@ -469,7 +538,8 @@ const TableView = ({ table }: TableViewProps) => {
                 <div key={column} className="space-y-2">
                   <Label htmlFor={`insert-${column}`} className="text-sm text-gray-700 flex items-center">
                     {column}
-                    {column === 'center_id' || column === 'program_id' || column === 'name' ? (
+                    {column === 'center_id' || column === 'program_id' || column === 'name' 
+                      || column === 'first_name' || column === 'last_name' ? (
                       <span className="text-red-500 ml-1">*</span>
                     ) : null}
                   </Label>
@@ -514,7 +584,7 @@ const TableView = ({ table }: TableViewProps) => {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-ishanya-green">
-              {detailedViewRow ? `${table.display_name || table.name}: ${detailedViewRow.name || 'Details'}` : 'Record Details'}
+              {detailedViewRow ? `${table.display_name || table.name}: ${detailedViewRow.name || detailedViewRow.first_name || 'Details'}` : 'Record Details'}
             </DialogTitle>
           </DialogHeader>
           {detailedViewRow && (
@@ -523,7 +593,9 @@ const TableView = ({ table }: TableViewProps) => {
                 <div key={column} className="space-y-1 border-b pb-2">
                   <Label className="text-xs text-gray-500">{column}</Label>
                   <div className="font-medium text-gray-800">
-                    {detailedViewRow[column] !== undefined ? String(detailedViewRow[column]) : '-'}
+                    {detailedViewRow[column] !== undefined && detailedViewRow[column] !== null 
+                      ? String(detailedViewRow[column]) 
+                      : '-'}
                   </div>
                 </div>
               ))}

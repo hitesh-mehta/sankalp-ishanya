@@ -20,15 +20,19 @@ const ProgramList = ({ center, onSelectProgram }: ProgramListProps) => {
     setError(null);
     
     try {
+      console.log('Fetching programs for center_id:', center.center_id);
       const data = await fetchProgramsByCenter(center.center_id);
+      
       if (data) {
+        console.log('Programs fetched successfully:', data);
         setPrograms(data);
       } else {
+        console.error('Failed to load programs, data is null or undefined');
         setError('Failed to load programs. Please try again.');
       }
     } catch (err) {
+      console.error('Error in loadPrograms:', err);
       setError('An unexpected error occurred. Please try again.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -64,7 +68,14 @@ const ProgramList = ({ center, onSelectProgram }: ProgramListProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
       {programs.map((program) => (
-        <ProgramCard key={program.program_id} program={program} onClick={onSelectProgram} />
+        <ProgramCard 
+          key={program.program_id} 
+          program={program} 
+          onClick={() => {
+            console.log('Selected program:', program);
+            onSelectProgram(program);
+          }} 
+        />
       ))}
     </div>
   );
