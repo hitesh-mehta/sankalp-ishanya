@@ -33,7 +33,7 @@ const ProgramCard = ({ program, onClick }: ProgramCardProps) => {
           </div>
           <div className="ml-4">
             <h3 className="text-lg font-semibold">{program.name}</h3>
-            <p className="text-sm text-gray-500">Program ID: {program.id}</p>
+            <p className="text-sm text-gray-500">Program ID: {program.program_id}</p>
           </div>
         </div>
         {isLoading && (

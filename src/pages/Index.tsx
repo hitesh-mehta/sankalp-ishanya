@@ -21,6 +21,7 @@ const Index = () => {
 
   // Handle program selection
   const handleSelectProgram = (program: Program) => {
+    console.log("Selected program:", program); // Add logging to help debug
     setSelectedProgram(program);
     setSelectedTable(null);
   };
