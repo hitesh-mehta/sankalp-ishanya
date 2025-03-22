@@ -16,7 +16,7 @@ type LayoutProps = {
 const Layout = ({ title, subtitle, children, showBackButton = false, onBack }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header title={title} subtitle={subtitle} />
       <div className="container px-4 py-6 mx-auto max-w-7xl">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">

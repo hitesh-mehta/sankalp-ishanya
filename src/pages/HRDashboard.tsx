@@ -1,110 +1,81 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import TableView from '@/components/tables/TableView';
-import { TableInfo } from '@/lib/api';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Users, UserPlus, UserCheck, FileSpreadsheet } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { getCurrentUser } from '@/lib/auth';
+import supabase from '@/lib/api';
+import AnnouncementBoard from '@/components/announcements/AnnouncementBoard';
 
 const HRDashboard = () => {
-  const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const user = getCurrentUser();
 
-  // Predefined employee table configuration
-  const employeeTable: TableInfo = {
-    id: 1,
-    name: 'employees',
-    display_name: 'Employees',
-    center_id: null, // HR dashboard can view all employees across centers
-    program_id: null, // Not restricted to specific programs
-  };
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (!user) return;
 
-  // Handle selecting employee management
-  const handleSelectEmployees = () => {
-    console.log("Selecting employee table:", employeeTable);
-    setSelectedTable(employeeTable);
-  };
+      try {
+        setLoading(true);
 
-  // Handle back button click
-  const handleBack = () => {
-    if (selectedTable) {
-      setSelectedTable(null);
-    }
-  };
+        // Fetch employees from the same center as the HR user
+        const { data: centerEmployees, error: employeesError } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('center_id', user.center_id);
+
+        if (employeesError) {
+          console.error('Error fetching employees:', employeesError);
+          return;
+        }
+
+        if (centerEmployees) {
+          setEmployees(centerEmployees);
+        }
+      } catch (error) {
+        console.error('Error fetching employee data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmployees();
+  }, [user]);
 
   return (
     <Layout
-      title="HR Dashboard"
-      subtitle="Manage employee data across all centers"
-      showBackButton={!!selectedTable}
-      onBack={handleBack}
+      title="HR Dashboard" 
+      subtitle={`Welcome back, ${user?.name || 'HR Manager'}`}
     >
-      {!selectedTable ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card 
-            className="bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={handleSelectEmployees}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="bg-ishanya-green/10 p-3 rounded-full">
-                  <Users className="h-8 w-8 text-ishanya-green" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Employees in Your Center</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center items-center h-32">
+                  <LoadingSpinner size="lg" />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-ishanya-green">Employee Management</h3>
-                  <p className="text-gray-500">View and manage all employee records</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="bg-ishanya-green/10 p-3 rounded-full">
-                  <UserPlus className="h-8 w-8 text-ishanya-green" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-ishanya-green">Onboarding</h3>
-                  <p className="text-gray-500">Manage employee onboarding process</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="bg-ishanya-green/10 p-3 rounded-full">
-                  <UserCheck className="h-8 w-8 text-ishanya-green" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-ishanya-green">Attendance</h3>
-                  <p className="text-gray-500">Track employee attendance records</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="bg-ishanya-green/10 p-3 rounded-full">
-                  <FileSpreadsheet className="h-8 w-8 text-ishanya-green" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-ishanya-green">Reports</h3>
-                  <p className="text-gray-500">View HR reports and statistics</p>
-                </div>
-              </div>
+              ) : employees.length === 0 ? (
+                <p className="text-gray-500">No employees found in your center.</p>
+              ) : (
+                <ul className="list-disc pl-5">
+                  {employees.map((employee) => (
+                    <li key={employee.id} className="py-1">
+                      {employee.name} - {employee.designation}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </div>
-      ) : (
-        <div className="bg-white p-4 rounded-lg shadow">
-          <TableView table={selectedTable} />
+        <div>
+          <AnnouncementBoard />
         </div>
-      )}
+      </div>
     </Layout>
   );
 };

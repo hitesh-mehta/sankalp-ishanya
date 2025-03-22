@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { getCurrentUser } from '@/lib/auth';
 import supabase from '@/lib/api';
+import AnnouncementBoard from '@/components/announcements/AnnouncementBoard';
 
 const TeacherDashboard = () => {
   const [programs, setPrograms] = useState<any[]>([]);
@@ -65,10 +66,9 @@ const TeacherDashboard = () => {
   
   const handleProgramChange = async (programId: number) => {
     setSelectedProgram(programId);
+    setLoading(true);
     
     try {
-      setLoading(true);
-      
       // Fetch students for the selected program
       const { data: programStudents, error: studentsError } = await supabase
         .from('students')
@@ -93,87 +93,92 @@ const TeacherDashboard = () => {
       title="Teacher Dashboard"
       subtitle={`Welcome back, ${user?.name || 'Teacher'}`}
     >
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <LoadingSpinner size="lg" />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Programs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {programs.length === 0 ? (
-                <p className="text-gray-500">No programs assigned to you yet.</p>
-              ) : (
-                <Tabs 
-                  defaultValue={selectedProgram?.toString()} 
-                  onValueChange={(value) => handleProgramChange(parseInt(value))}
-                >
-                  <TabsList className="mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>My Programs</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {programs.length === 0 ? (
+                  <p className="text-gray-500">No programs assigned to you yet.</p>
+                ) : (
+                  <Tabs 
+                    defaultValue={selectedProgram?.toString()} 
+                    onValueChange={(value) => handleProgramChange(parseInt(value))}
+                  >
+                    <TabsList className="mb-4">
+                      {programs.map((program) => (
+                        <TabsTrigger key={program.program_id} value={program.program_id.toString()}>
+                          {program.name}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    
                     {programs.map((program) => (
-                      <TabsTrigger key={program.program_id} value={program.program_id.toString()}>
-                        {program.name}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  
-                  {programs.map((program) => (
-                    <TabsContent key={program.program_id} value={program.program_id.toString()}>
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>
-                            {program.name} - Enrolled Students ({students.length})
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {students.length === 0 ? (
-                            <p className="text-gray-500">No students enrolled in this program.</p>
-                          ) : (
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>ID</TableHead>
-                                  <TableHead>Name</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead>Sessions</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {students.map((student) => (
-                                  <TableRow key={student.id}>
-                                    <TableCell>{student.student_id}</TableCell>
-                                    <TableCell>
-                                      {student.first_name} {student.last_name}
-                                    </TableCell>
-                                    <TableCell>
-                                      <span 
-                                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                          student.status === 'active' 
-                                            ? 'bg-green-100 text-green-800' 
-                                            : 'bg-gray-100 text-gray-800'
-                                        }`}
-                                      >
-                                        {student.status || 'N/A'}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell>{student.number_of_sessions || 'N/A'}</TableCell>
+                      <TabsContent key={program.program_id} value={program.program_id.toString()}>
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>
+                              {program.name} - Enrolled Students ({students.length})
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            {students.length === 0 ? (
+                              <p className="text-gray-500">No students enrolled in this program.</p>
+                            ) : (
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>ID</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Sessions</TableHead>
                                   </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              )}
-            </CardContent>
-          </Card>
+                                </TableHeader>
+                                <TableBody>
+                                  {students.map((student) => (
+                                    <TableRow key={student.id}>
+                                      <TableCell>{student.student_id}</TableCell>
+                                      <TableCell>
+                                        {student.first_name} {student.last_name}
+                                      </TableCell>
+                                      <TableCell>
+                                        <span 
+                                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            student.status === 'active' 
+                                              ? 'bg-green-100 text-green-800' 
+                                              : 'bg-gray-100 text-gray-800'
+                                          }`}
+                                        >
+                                          {student.status || 'N/A'}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell>{student.number_of_sessions || 'N/A'}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
-      )}
+        <div>
+          <AnnouncementBoard />
+        </div>
+      </div>
     </Layout>
   );
 };

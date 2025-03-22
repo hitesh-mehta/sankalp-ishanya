@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,9 +21,12 @@ const announcementSchema = z.object({
 
 type AnnouncementFormValues = z.infer<typeof announcementSchema>;
 
-const AnnouncementForm = () => {
+type AnnouncementFormProps = {
+  onAnnouncementAdded?: () => void;
+};
+
+const AnnouncementForm = ({ onAnnouncementAdded }: AnnouncementFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [recentAnnouncements, setRecentAnnouncements] = useState<any[]>([]);
   const user = getCurrentUser();
 
   const form = useForm<AnnouncementFormValues>({
@@ -68,13 +71,10 @@ const AnnouncementForm = () => {
       // Reset form
       form.reset();
       
-      // Add the new announcement to the recent announcements
-      if (announcementData && announcementData.length > 0) {
-        setRecentAnnouncements([announcementData[0], ...recentAnnouncements.slice(0, 2)]);
+      // Call the callback if provided
+      if (onAnnouncementAdded) {
+        onAnnouncementAdded();
       }
-      
-      // Refresh the announcements list
-      fetchRecentAnnouncements();
       
     } catch (error: any) {
       console.error('Error creating announcement:', error);
@@ -84,104 +84,48 @@ const AnnouncementForm = () => {
     }
   };
 
-  const fetchRecentAnnouncements = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('announcements')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (error) {
-        console.error('Error fetching announcements:', error);
-        return;
-      }
-
-      if (data) {
-        setRecentAnnouncements(data);
-      }
-    } catch (error) {
-      console.error('Error fetching recent announcements:', error);
-    }
-  };
-
-  // Fetch recent announcements on component mount
-  useEffect(() => {
-    fetchRecentAnnouncements();
-  }, []);
-
   return (
-    <Card className="shadow-lg border-t-4 border-ishanya-yellow">
-      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg">
-        <CardTitle className="flex items-center gap-2 text-gray-800">
-          <Megaphone className="h-5 w-5 text-ishanya-green" />
-          Create Announcement
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Announcement Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter announcement title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="announcement"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Announcement Content</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter your announcement here..."
-                      className="min-h-[120px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button
-              type="submit"
-              className="w-full bg-ishanya-green hover:bg-ishanya-green/90 text-white"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <LoadingSpinner size="sm" /> : "Post Announcement"}
-            </Button>
-          </form>
-        </Form>
-
-        {recentAnnouncements.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Recent Announcements</h3>
-            <div className="space-y-3">
-              {recentAnnouncements.map((announcement) => (
-                <div 
-                  key={announcement.id}
-                  className="p-3 border border-gray-200 rounded-md bg-gray-50"
-                >
-                  <p className="font-medium text-gray-800">{announcement.title}</p>
-                  <p className="text-sm text-gray-600 mt-1">{announcement.announcement}</p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    {new Date(announcement.created_at).toLocaleString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Announcement Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter announcement title" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="announcement"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Announcement Content</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Enter your announcement here..."
+                  className="min-h-[120px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button
+          type="submit"
+          className="w-full bg-ishanya-green hover:bg-ishanya-green/90 text-white"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? <LoadingSpinner size="sm" /> : "Post Announcement"}
+        </Button>
+      </form>
+    </Form>
   );
 };
 

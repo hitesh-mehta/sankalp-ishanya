@@ -5,13 +5,13 @@ import Layout from '@/components/layout/Layout';
 import CenterList from '@/components/centers/CenterList';
 import { Center, Program, fetchCenters } from '@/lib/api';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import AnnouncementForm from '@/components/admin/AnnouncementForm';
 import DataManager from '@/components/admin/DataManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Users, GraduationCap } from 'lucide-react';
 import ProgramList from '@/components/programs/ProgramList';
 import TableList from '@/components/tables/TableList';
 import TableView from '@/components/tables/TableView';
+import AnnouncementBoard from '@/components/announcements/AnnouncementBoard';
 
 const Index = () => {
   const [centers, setCenters] = useState<Center[]>([]);
@@ -142,13 +142,11 @@ const Index = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <CenterList 
-              onSelectCenter={handleSelectCenter} 
-            />
+            <CenterList onSelectCenter={handleSelectCenter} />
           </div>
           
           <div>
-            <AnnouncementForm />
+            <AnnouncementBoard />
           </div>
         </div>
         
