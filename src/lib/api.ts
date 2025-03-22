@@ -2,10 +2,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-// These would need to be set up via environment variables in a real application
-// For now, we'll use placeholder values that will be replaced by actual values
+// These need to be replaced with actual values from your Supabase account
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-supabase-url.supabase.co';
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY || 'your-supabase-key';
+
+// Add more helpful error message for development
+const checkSupabaseConfig = () => {
+  if (supabaseUrl === 'https://your-supabase-url.supabase.co' || 
+      supabaseKey === 'your-supabase-key') {
+    console.error('⚠️ Default Supabase credentials detected. Please set your actual Supabase URL and key.');
+    return false;
+  }
+  return true;
+};
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -44,6 +53,10 @@ const handleError = (error: any, customMessage?: string) => {
 // Fetch all centers
 export const fetchCenters = async (): Promise<Center[] | null> => {
   try {
+    if (!checkSupabaseConfig()) {
+      throw new Error('Supabase configuration missing or invalid');
+    }
+
     const { data, error } = await supabase
       .from('centers')
       .select('*')
@@ -59,6 +72,10 @@ export const fetchCenters = async (): Promise<Center[] | null> => {
 // Fetch programs by center ID
 export const fetchProgramsByCenter = async (centerId: number): Promise<Program[] | null> => {
   try {
+    if (!checkSupabaseConfig()) {
+      throw new Error('Supabase configuration missing or invalid');
+    }
+
     const { data, error } = await supabase
       .from('programs')
       .select('*')

@@ -224,7 +224,7 @@ const TableView = ({ table }: TableViewProps) => {
           </DialogHeader>
           <div className="space-y-4 py-2">
             {columns
-              .filter(column => column !== 'id' || column !== 'created_at') // Optional: skip auto-generated columns
+              .filter(column => column !== 'id') // Fix: Removed the comparison that caused the type error
               .map((column) => (
                 <div key={column} className="space-y-2">
                   <Label htmlFor={`insert-${column}`}>{column}</Label>
