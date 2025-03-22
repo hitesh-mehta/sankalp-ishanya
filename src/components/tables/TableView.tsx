@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { TableInfo, fetchTableData, deleteRow, updateRow, insertRow, fetchTableColumns, validateData } from '@/lib/api';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -7,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Edit, Trash, Save, Search, Filter, X, ChevronRight, Eye, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -49,11 +51,9 @@ const TableView = ({ table }: TableViewProps) => {
       console.log(`Fetching columns for table ${table.name}`);
       const tableColumns = await fetchTableColumns(table.name);
       if (tableColumns) {
-        // Filter out the uuid id field from display columns
-        const filteredColumns = tableColumns.filter(col => col !== 'id');
-        console.log(`Columns for ${table.name} (filtered):`, filteredColumns);
+        console.log(`Columns for ${table.name}:`, tableColumns);
         setAllColumns(tableColumns); // Keep all columns for data operations
-        setColumns(filteredColumns); // Use filtered columns for display
+        setColumns(tableColumns); // Use filtered columns for display
       } else {
         console.error(`No columns returned for ${table.name}`);
       }
@@ -89,6 +89,8 @@ const TableView = ({ table }: TableViewProps) => {
     if (searchTerm) {
       result = result.filter(row => 
         Object.entries(row).some(([key, value]) => 
+          key !== 'id' && // Exclude UUID from search
+          value !== null && 
           String(value)
             .toLowerCase()
             .includes(searchTerm.toLowerCase())
@@ -101,6 +103,7 @@ const TableView = ({ table }: TableViewProps) => {
       if (value) {
         result = result.filter(row => 
           row[column] !== undefined && 
+          row[column] !== null &&
           String(row[column])
             .toLowerCase()
             .includes(value.toLowerCase())
@@ -113,8 +116,37 @@ const TableView = ({ table }: TableViewProps) => {
 
   // Handle detailed view of a row
   const handleViewDetails = (row: any) => {
-    setDetailedViewRow(row);
+    setDetailedViewRow({...row});
     setIsDetailedViewOpen(true);
+  };
+
+  // Save changes from detailed view
+  const handleSaveDetailedView = async () => {
+    if (!detailedViewRow) return;
+    
+    try {
+      console.log(`Saving changes to row in ${table.name}:`, detailedViewRow);
+      
+      // Ensure created_at is present and valid
+      if (!detailedViewRow.created_at || detailedViewRow.created_at === '') {
+        detailedViewRow.created_at = new Date().toISOString();
+      }
+      
+      const result = await updateRow(table.name, detailedViewRow.id, detailedViewRow);
+      
+      if (result.success) {
+        toast.success('Record updated successfully');
+        setIsDetailedViewOpen(false);
+        loadTableData();
+      } else if (result.errors) {
+        console.error('Update errors:', result.errors);
+        setValidationErrors(result.errors);
+        toast.error('Please correct the validation errors');
+      }
+    } catch (err) {
+      console.error('Error in handleSaveDetailedView:', err);
+      toast.error('An error occurred while updating the record');
+    }
   };
 
   // Handle row deletion
@@ -126,6 +158,11 @@ const TableView = ({ table }: TableViewProps) => {
         if (success) {
           toast.success('Record deleted successfully');
           loadTableData();
+          
+          // Close detailed view if open
+          if (isDetailedViewOpen) {
+            setIsDetailedViewOpen(false);
+          }
         } else {
           toast.error('Failed to delete record');
         }
@@ -162,41 +199,20 @@ const TableView = ({ table }: TableViewProps) => {
     if (!editingRow) return;
     
     try {
-      // Format values appropriately based on column types
-      const formattedData = { ...editingRow };
-      
-      // Convert numeric fields to numbers
-      ['center_id', 'program_id', 'student_id', 'employee_id', 'enrollment_year'].forEach(field => {
-        if (formattedData[field] !== undefined && formattedData[field] !== '') {
-          const numValue = Number(formattedData[field]);
-          formattedData[field] = isNaN(numValue) ? formattedData[field] : numValue;
-        }
-      });
-      
-      console.log(`Updating row in ${table.name}:`, formattedData);
-      
-      // Validate the data
-      const { isValid, errors } = validateData(table.name, formattedData);
-      
-      if (!isValid) {
-        console.error('Validation errors:', errors);
-        setValidationErrors(errors);
-        toast.error('Please correct the validation errors');
-        return;
+      // Ensure created_at is present and valid
+      if (!editingRow.created_at || editingRow.created_at === '') {
+        editingRow.created_at = new Date().toISOString();
       }
       
-      const result = await updateRow(table.name, formattedData.id, formattedData);
+      console.log(`Updating row in ${table.name}:`, editingRow);
+      
+      const result = await updateRow(table.name, editingRow.id, editingRow);
       if (result.success) {
         toast.success('Record updated successfully');
         setIsEditing(false);
         setEditingRow(null);
         setValidationErrors({});
         loadTableData();
-        
-        // Close detailed view if open
-        if (isDetailedViewOpen) {
-          setIsDetailedViewOpen(false);
-        }
       } else if (result.errors) {
         console.error('Update errors:', result.errors);
         setValidationErrors(result.errors);
@@ -214,18 +230,15 @@ const TableView = ({ table }: TableViewProps) => {
     
     // Set default values
     allColumns.forEach(column => {
-      // Don't set id - it will be auto-generated
-      if (column !== 'id') {
-        // Set default values for certain fields
-        if (column === 'center_id' && table.center_id) {
-          initialNewRow[column] = table.center_id;
-        } else if (column === 'program_id' && table.program_id) {
-          initialNewRow[column] = table.program_id;
-        } else if (column === 'created_at') {
-          initialNewRow[column] = new Date().toISOString(); // Add timestamp for created_at
-        } else {
-          initialNewRow[column] = '';
-        }
+      // Set default values for certain fields
+      if (column === 'center_id' && table.center_id) {
+        initialNewRow[column] = table.center_id;
+      } else if (column === 'program_id' && table.program_id) {
+        initialNewRow[column] = table.program_id;
+      } else if (column === 'created_at') {
+        initialNewRow[column] = new Date().toISOString(); // Add timestamp for created_at
+      } else {
+        initialNewRow[column] = '';
       }
     });
     
@@ -251,35 +264,14 @@ const TableView = ({ table }: TableViewProps) => {
 
   const handleInsertSubmit = async () => {
     try {
-      // Format values appropriately based on column types
-      const formattedData = { ...newRow };
-      
       // Ensure created_at is set
-      if (!formattedData.created_at) {
-        formattedData.created_at = new Date().toISOString();
+      if (!newRow.created_at || newRow.created_at === '') {
+        newRow.created_at = new Date().toISOString();
       }
       
-      // Convert numeric fields to numbers
-      ['center_id', 'program_id', 'student_id', 'employee_id', 'enrollment_year'].forEach(field => {
-        if (formattedData[field] !== undefined && formattedData[field] !== '') {
-          const numValue = Number(formattedData[field]);
-          formattedData[field] = isNaN(numValue) ? formattedData[field] : numValue;
-        }
-      });
+      console.log(`Inserting row into ${table.name}:`, newRow);
       
-      console.log(`Inserting row into ${table.name}:`, formattedData);
-      
-      // Validate the data
-      const { isValid, errors } = validateData(table.name, formattedData);
-      
-      if (!isValid) {
-        console.error('Validation errors:', errors);
-        setValidationErrors(errors);
-        toast.error('Please correct the validation errors');
-        return;
-      }
-      
-      const result = await insertRow(table.name, formattedData);
+      const result = await insertRow(table.name, newRow);
       if (result.success) {
         toast.success('Record added successfully');
         setIsInsertDialogOpen(false);
@@ -308,6 +300,15 @@ const TableView = ({ table }: TableViewProps) => {
       ...prev,
       [column]: value
     }));
+  };
+
+  // Determine if a field should use a textarea instead of input
+  const shouldUseTextarea = (column: string): boolean => {
+    return column === 'description' || 
+           column === 'comments' || 
+           column === 'strengths' || 
+           column === 'weakness' || 
+           column === 'address';
   };
 
   if (loading) {
@@ -375,30 +376,32 @@ const TableView = ({ table }: TableViewProps) => {
         {/* Filter Panel */}
         {isFilterOpen && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border rounded-lg bg-gray-50 border-ishanya-green/20 shadow-inner">
-            {columns.map(column => (
-              <div key={`filter-${column}`} className="space-y-2">
-                <Label htmlFor={`filter-${column}`} className="text-xs font-medium text-ishanya-green">
-                  Filter by {column}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id={`filter-${column}`}
-                    placeholder={`Filter ${column}...`}
-                    value={filterValues[column] || ''}
-                    onChange={(e) => handleFilterChange(column, e.target.value)}
-                    className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
-                  />
-                  {filterValues[column] && (
-                    <button 
-                      className="absolute right-3 top-3" 
-                      onClick={() => handleFilterChange(column, '')}
-                    >
-                      <X className="h-4 w-4 text-gray-400 hover:text-gray-700" />
-                    </button>
-                  )}
+            {columns
+              .filter(column => column !== 'created_at') // Don't show filter for created_at
+              .map(column => (
+                <div key={`filter-${column}`} className="space-y-2">
+                  <Label htmlFor={`filter-${column}`} className="text-xs font-medium text-ishanya-green">
+                    Filter by {column}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id={`filter-${column}`}
+                      placeholder={`Filter ${column}...`}
+                      value={filterValues[column] || ''}
+                      onChange={(e) => handleFilterChange(column, e.target.value)}
+                      className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
+                    />
+                    {filterValues[column] && (
+                      <button 
+                        className="absolute right-3 top-3" 
+                        onClick={() => handleFilterChange(column, '')}
+                      >
+                        <X className="h-4 w-4 text-gray-400 hover:text-gray-700" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>
@@ -409,54 +412,60 @@ const TableView = ({ table }: TableViewProps) => {
           <Table>
             <TableHeader>
               <TableRow className="bg-ishanya-green/10">
-                {columns.map((column) => (
-                  <TableHead key={column} className="text-ishanya-green font-medium">
-                    {column}
-                  </TableHead>
-                ))}
+                {columns
+                  .filter(column => column !== 'created_at') // Hide created_at column
+                  .map((column) => (
+                    <TableHead key={column} className="text-ishanya-green font-medium">
+                      {column}
+                    </TableHead>
+                  ))}
                 <TableHead className="w-28 text-ishanya-green font-medium">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + 1} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={columns.length} className="text-center py-8 text-gray-500">
                     No data matching current filters
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((row) => (
                   <TableRow key={row.id} className="cursor-pointer hover:bg-gray-50 transition-colors">
-                    {columns.map((column) => (
-                      <TableCell 
-                        key={`${row.id}-${column}`}
-                        onClick={() => handleViewDetails(row)}
-                        className="py-3"
-                      >
-                        {isEditing && editingRow?.id === row.id ? (
-                          <div>
-                            <Input
-                              value={editingRow[column] !== null ? editingRow[column] || '' : ''}
-                              onChange={(e) => handleEditChange(column, e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
-                                validationErrors[column] ? 'border-red-500' : ''
-                              }`}
-                            />
-                            {validationErrors[column] && (
-                              <p className="text-red-500 text-xs mt-1">{validationErrors[column]}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <span className="truncate max-w-[200px]">{row[column] !== null ? String(row[column] || '') : ''}</span>
-                            {column === columns[columns.length - 1] && (
-                              <ChevronRight className="h-4 w-4 ml-2 text-gray-400" />
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                    ))}
+                    {columns
+                      .filter(column => column !== 'created_at') // Hide created_at
+                      .map((column) => (
+                        <TableCell 
+                          key={`${row.id}-${column}`}
+                          onClick={() => handleViewDetails(row)}
+                          className="py-3"
+                        >
+                          {isEditing && editingRow?.id === row.id ? (
+                            <div>
+                              <Input
+                                value={row[column] !== null ? String(row[column] || '') : ''}
+                                onChange={(e) => handleEditChange(column, e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
+                                  validationErrors[column] ? 'border-red-500' : ''
+                                }`}
+                              />
+                              {validationErrors[column] && (
+                                <p className="text-red-500 text-xs mt-1">{validationErrors[column]}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center">
+                              <span className="truncate max-w-[200px]">
+                                {row[column] !== null && row[column] !== undefined ? String(row[column]) : ''}
+                              </span>
+                              {column === columns[columns.length - 1] && (
+                                <ChevronRight className="h-4 w-4 ml-2 text-gray-400" />
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                      ))}
                     <TableCell>
                       <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                         <Button
@@ -512,31 +521,50 @@ const TableView = ({ table }: TableViewProps) => {
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
             {allColumns
-              .filter(column => column !== 'id' && column !== 'created_at') // Don't show ID or created_at field for insertion
-              .map((column) => (
-                <div key={column} className="space-y-2">
-                  <Label htmlFor={`insert-${column}`} className="text-sm text-gray-700 flex items-center">
-                    {column}
-                    {(column === 'center_id' || column === 'program_id' || 
-                      column === 'name' || column === 'first_name' || 
-                      column === 'last_name' || column === 'email') ? (
-                      <span className="text-red-500 ml-1">*</span>
-                    ) : null}
-                  </Label>
-                  <Input
-                    id={`insert-${column}`}
-                    placeholder={`Enter ${column}`}
-                    value={newRow[column] || ''}
-                    onChange={(e) => handleInsertChange(column, e.target.value)}
-                    className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
-                      validationErrors[column] ? 'border-red-500' : ''
-                    }`}
-                  />
-                  {validationErrors[column] && (
-                    <p className="text-red-500 text-xs">{validationErrors[column]}</p>
-                  )}
-                </div>
-              ))}
+              .filter(column => column !== 'id' && column !== 'created_at') // Hide UUID and created_at for insertion
+              .map((column) => {
+                const isRequired = (
+                  column === 'center_id' || 
+                  column === 'program_id' || 
+                  column === 'name' || 
+                  column === 'first_name' || 
+                  column === 'last_name' || 
+                  column === 'email'
+                );
+                
+                return (
+                  <div key={column} className="space-y-2">
+                    <Label htmlFor={`insert-${column}`} className="text-sm text-gray-700 flex items-center">
+                      {column}
+                      {isRequired && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+                    {shouldUseTextarea(column) ? (
+                      <Textarea
+                        id={`insert-${column}`}
+                        placeholder={`Enter ${column}`}
+                        value={newRow[column] || ''}
+                        onChange={(e) => handleInsertChange(column, e.target.value)}
+                        className={`min-h-[100px] border-ishanya-green/30 focus-visible:ring-ishanya-green ${
+                          validationErrors[column] ? 'border-red-500' : ''
+                        }`}
+                      />
+                    ) : (
+                      <Input
+                        id={`insert-${column}`}
+                        placeholder={`Enter ${column}`}
+                        value={newRow[column] || ''}
+                        onChange={(e) => handleInsertChange(column, e.target.value)}
+                        className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
+                          validationErrors[column] ? 'border-red-500' : ''
+                        }`}
+                      />
+                    )}
+                    {validationErrors[column] && (
+                      <p className="text-red-500 text-xs">{validationErrors[column]}</p>
+                    )}
+                  </div>
+                );
+              })}
             
             {validationErrors.general && (
               <div className="col-span-1 md:col-span-2">
@@ -570,23 +598,38 @@ const TableView = ({ table }: TableViewProps) => {
           {detailedViewRow && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-2">
               {allColumns
-                .filter(column => column !== 'id' && column !== 'created_at') // Hide UUID and created_at
+                .filter(column => column !== 'id') // Hide UUID
                 .map(column => (
                 <div key={column} className="space-y-1 border-b pb-2">
                   <Label className="text-xs text-gray-500">{column}</Label>
                   <div className="font-medium text-gray-800">
-                    <Input
-                      value={detailedViewRow[column] !== undefined && detailedViewRow[column] !== null 
-                        ? String(detailedViewRow[column]) 
-                        : ''}
-                      onChange={(e) => {
-                        setDetailedViewRow({
-                          ...detailedViewRow,
-                          [column]: e.target.value
-                        });
-                      }}
-                      className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
-                    />
+                    {shouldUseTextarea(column) ? (
+                      <Textarea
+                        value={detailedViewRow[column] !== undefined && detailedViewRow[column] !== null 
+                          ? String(detailedViewRow[column]) 
+                          : ''}
+                        onChange={(e) => {
+                          setDetailedViewRow({
+                            ...detailedViewRow,
+                            [column]: e.target.value
+                          });
+                        }}
+                        className="min-h-[100px] border-ishanya-green/30 focus-visible:ring-ishanya-green"
+                      />
+                    ) : (
+                      <Input
+                        value={detailedViewRow[column] !== undefined && detailedViewRow[column] !== null 
+                          ? String(detailedViewRow[column]) 
+                          : ''}
+                        onChange={(e) => {
+                          setDetailedViewRow({
+                            ...detailedViewRow,
+                            [column]: e.target.value
+                          });
+                        }}
+                        className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
+                      />
+                    )}
                   </div>
                 </div>
               ))}
@@ -595,14 +638,7 @@ const TableView = ({ table }: TableViewProps) => {
           <div className="flex justify-end mt-4">
             <Button
               variant="default"
-              onClick={() => {
-                // Save the changes from detailed view
-                if (detailedViewRow) {
-                  setEditingRow(detailedViewRow);
-                  setIsDetailedViewOpen(false);
-                  handleSaveEdit();
-                }
-              }}
+              onClick={handleSaveDetailedView}
               className="mr-2 bg-ishanya-green hover:bg-ishanya-green/90"
             >
               <Save className="h-4 w-4 mr-2" />

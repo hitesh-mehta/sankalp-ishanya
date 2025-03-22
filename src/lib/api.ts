@@ -57,7 +57,8 @@ export const validationRules: Record<string, Record<string, ValidationRule>> = {
   Students: {
     first_name: { required: true, message: 'First name is required' },
     last_name: { required: true, message: 'Last name is required' },
-    center_id: { required: true, message: 'Center is required' }
+    center_id: { required: true, message: 'Center is required' },
+    program_id: { required: true, message: 'Program is required' }
   },
   Educators: {
     name: { required: true, message: 'Educator name is required' },
@@ -126,7 +127,7 @@ const getTableName = (displayName: string): string => {
   const tableMap: Record<string, string> = {
     'Students': 'students',
     'Educators': 'educators',
-    'Courses': 'courses'
+    'Employees': 'employees'
   };
   
   return tableMap[displayName] || displayName.toLowerCase();
@@ -173,6 +174,14 @@ export const fetchTablesByProgram = async (programId: number): Promise<TableInfo
         description: 'Educator information',
         display_name: 'Educators',
         center_id: center_id
+      },
+      { 
+        id: 3, 
+        name: 'employees', 
+        program_id: programId, 
+        description: 'Employee information',
+        display_name: 'Employees',
+        center_id: center_id
       }
     ];
     
@@ -201,8 +210,10 @@ export const fetchTableColumns = async (tableName: string): Promise<string[] | n
     
     // If we have data, extract columns
     if (data && data.length > 0) {
-      console.log(`Columns found for ${tableName}:`, Object.keys(data[0]));
-      return Object.keys(data[0]);
+      // Filter out the uuid column
+      const columns = Object.keys(data[0]).filter(col => col !== 'id');
+      console.log(`Columns found for ${tableName} (excluding uuid):`, columns);
+      return columns;
     }
     
     // If table exists but is empty, provide default columns based on table name
@@ -210,7 +221,7 @@ export const fetchTableColumns = async (tableName: string): Promise<string[] | n
     
     if (tableName.toLowerCase() === 'students') {
       return [
-        'id', 'first_name', 'last_name', 'photo', 'gender', 'dob', 'primary_diagnosis', 
+        'first_name', 'last_name', 'photo', 'gender', 'dob', 'primary_diagnosis', 
         'comorbidity', 'udid', 'student_id', 'enrollment_year', 'status', 'student_email', 
         'program_id', 'program_2_id', 'number_of_sessions', 'timings', 'days_of_week', 
         'educator_employee_id', 'secondary_educator_employee_id', 'session_type', 
@@ -220,26 +231,20 @@ export const fetchTableColumns = async (tableName: string): Promise<string[] | n
       ];
     } else if (tableName.toLowerCase() === 'educators') {
       return [
-        'id', 'center_id', 'employee_id', 'name', 'photo', 'designation', 'email', 
+        'center_id', 'employee_id', 'name', 'photo', 'designation', 'email', 
         'phone', 'date_of_birth', 'date_of_joining', 'work_location', 'created_at'
       ];
     } else if (tableName.toLowerCase() === 'employees') {
       return [
-        'id', 'employee_id', 'name', 'gender', 'designation', 'department', 'employment_type',
+        'employee_id', 'name', 'gender', 'designation', 'department', 'employment_type',
         'program_id', 'email', 'phone', 'date_of_birth', 'date_of_joining', 'date_of_leaving',
         'status', 'work_location', 'emergency_contact_name', 'emergency_contact', 'blood_group',
         'created_at', 'center_id', 'LOR'
       ];
-    } else if (tableName.toLowerCase() === 'courses') {
-      return [
-        'id', 'name', 'duration_weeks', 'max_students', 'description', 'start_date',
-        'end_date', 'schedule', 'classroom', 'credits', 'prerequisites', 'syllabus',
-        'materials', 'assessment_method', 'center_id', 'program_id'
-      ];
     }
     
     // Default minimal columns
-    return ['id', 'name', 'center_id', 'program_id'];
+    return ['name', 'center_id', 'program_id'];
     
   } catch (error) {
     return handleError(error, `Failed to fetch columns for ${tableName}`);
@@ -291,6 +296,77 @@ export const validateData = (tableName: string, data: Record<string, any>): { is
   return { isValid, errors };
 };
 
+// Process field data for insert/update to ensure proper data types
+const processFieldData = (data: Record<string, any>): Record<string, any> => {
+  const result = { ...data };
+  
+  // Handle array fields
+  for (const [key, value] of Object.entries(result)) {
+    // Handle arrays that might come in as strings
+    if (typeof value === 'string' && 
+        (key === 'days_of_week' || key === 'timings' || key.includes('array'))) {
+      try {
+        // If it's already a properly formatted JSON array, this will work
+        if (value.startsWith('[') && value.endsWith(']')) {
+          result[key] = JSON.parse(value);
+        } 
+        // If it's a single quoted number, remove quotes and create an array with one element
+        else if (/^"[0-9]+"$/.test(value)) {
+          result[key] = [Number(value.replace(/"/g, ''))];
+        }
+        // If it's a comma-separated list, convert to array
+        else if (value.includes(',')) {
+          result[key] = value.split(',').map(item => item.trim());
+        }
+        // If it's a single value, make it an array with one element
+        else if (value.trim() !== '') {
+          result[key] = [value.trim()];
+        }
+        // If empty, set to null or empty array
+        else {
+          result[key] = null;
+        }
+      } catch (e) {
+        console.error(`Error processing field ${key}:`, e);
+        result[key] = null; // Default to null if parsing fails
+      }
+    }
+    
+    // Format date fields
+    if (typeof value === 'string' && 
+        (key.includes('date') || key.includes('dob') || key === 'created_at')) {
+      // If empty string, set to current timestamp
+      if (value.trim() === '') {
+        result[key] = new Date().toISOString();
+      } 
+      // If non-empty but not in ISO format, try to convert
+      else if (!value.includes('T')) {
+        try {
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            result[key] = date.toISOString();
+          }
+        } catch (e) {
+          console.error(`Error parsing date for field ${key}:`, e);
+        }
+      }
+    }
+    
+    // Handle numeric fields
+    if (typeof value === 'string' && 
+        (key.includes('_id') || key.includes('number') || key.includes('year'))) {
+      if (value.trim() !== '') {
+        const numValue = Number(value);
+        if (!isNaN(numValue)) {
+          result[key] = numValue;
+        }
+      }
+    }
+  }
+  
+  return result;
+};
+
 // Fetch data from a specific table with proper logging and improved error handling
 export const fetchTableData = async (tableName: string, center_id?: number): Promise<any[] | null> => {
   try {
@@ -324,16 +400,19 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
   try {
     console.log(`Inserting row into ${tableName} with data:`, rowData);
     
-    // Always add created_at timestamp
-    const dataWithTimestamp = {
+    // Always add created_at timestamp with proper format
+    const initialData = {
       ...rowData,
       created_at: new Date().toISOString()
     };
     
-    console.log('Data with timestamp:', dataWithTimestamp);
+    // Process data to ensure proper formats for arrays, dates, and numbers
+    const processedData = processFieldData(initialData);
+    
+    console.log('Processed data for insertion:', processedData);
     
     // Validate the data before inserting
-    const { isValid, errors } = validateData(tableName, dataWithTimestamp);
+    const { isValid, errors } = validateData(tableName, processedData);
     
     if (!isValid) {
       toast.error('Please correct the validation errors');
@@ -341,14 +420,14 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
     }
     
     // Remove ID if it's empty (for auto-generated IDs)
-    if (!dataWithTimestamp.id) {
-      delete dataWithTimestamp.id;
+    if (!processedData.id || processedData.id === '') {
+      delete processedData.id;
     }
     
     // Insert into the actual table
     const { data, error } = await supabase
       .from(tableName.toLowerCase())
-      .insert(dataWithTimestamp)
+      .insert(processedData)
       .select();
     
     if (error) {
@@ -360,6 +439,10 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
         toast.error('A record with this ID already exists');
       } else if (error.message.includes('violates foreign key constraint')) {
         toast.error('This record references data that doesn\'t exist');
+      } else if (error.message.includes('malformed array literal')) {
+        toast.error('Invalid array format. Please use a comma-separated list or remove brackets');
+      } else if (error.message.includes('invalid input syntax for type timestamp')) {
+        toast.error('Invalid date format. Please use YYYY-MM-DD or leave empty');
       } else {
         toast.error(error.message);
       }
@@ -381,13 +464,18 @@ export const updateRow = async (tableName: string, id: number, rowData: any): Pr
   try {
     console.log(`Updating row in ${tableName} with id ${id}:`, rowData);
     
-    // Make sure we're not trying to update created_at with an empty string
-    if (rowData.created_at === '') {
+    // Handle created_at - if empty, use current timestamp
+    if (!rowData.created_at || rowData.created_at === '') {
       rowData.created_at = new Date().toISOString();
     }
     
+    // Process data to ensure proper formats for arrays, dates, and numbers
+    const processedData = processFieldData(rowData);
+    
+    console.log('Processed data for update:', processedData);
+    
     // Validate the data before updating
-    const { isValid, errors } = validateData(tableName, rowData);
+    const { isValid, errors } = validateData(tableName, processedData);
     
     if (!isValid) {
       toast.error('Please correct the validation errors');
@@ -397,14 +485,23 @@ export const updateRow = async (tableName: string, id: number, rowData: any): Pr
     // Update the actual table
     const { data, error } = await supabase
       .from(tableName.toLowerCase())
-      .update(rowData)
+      .update(processedData)
       .eq('id', id)
       .select();
     
     if (error) {
       console.error(`Update error in ${tableName}:`, error);
       console.error('Error details:', JSON.stringify(error, null, 2));
-      toast.error(error.message);
+      
+      // Show specific error messages based on error type
+      if (error.message.includes('malformed array literal')) {
+        toast.error('Invalid array format. Please use a comma-separated list or remove brackets');
+      } else if (error.message.includes('invalid input syntax for type timestamp')) {
+        toast.error('Invalid date format. Please use YYYY-MM-DD or leave empty');
+      } else {
+        toast.error(error.message);
+      }
+      
       return { success: false, errors: { general: error.message } };
     }
     
@@ -449,17 +546,26 @@ export const bulkInsert = async (tableName: string, rows: any[]): Promise<{ succ
   try {
     console.log(`Bulk inserting ${rows.length} rows into table ${tableName}`);
     
+    // Process each row to ensure proper data formats
+    const processedRows = rows.map(row => {
+      // Add created_at timestamp if missing
+      if (!row.created_at || row.created_at === '') {
+        row.created_at = new Date().toISOString();
+      }
+      return processFieldData(row);
+    });
+    
     // Validate each row before insertion
     const invalidRows: number[] = [];
     const validRows: any[] = [];
     
-    rows.forEach((row, index) => {
+    processedRows.forEach((row, index) => {
       const { isValid } = validateData(tableName, row);
       if (!isValid) {
         invalidRows.push(index + 1); // +1 for human-readable row numbers
       } else {
         // Remove ID if it's empty (for auto-generated IDs)
-        if (!row.id) {
+        if (!row.id || row.id === '') {
           delete row.id;
         }
         validRows.push(row);
