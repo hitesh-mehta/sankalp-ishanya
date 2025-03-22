@@ -1,13 +1,13 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ErrorDisplay from '@/components/ui/ErrorDisplay';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/auth';
 import supabase from '@/lib/api';
 
@@ -15,15 +15,23 @@ const ParentDashboard = () => {
   const [studentData, setStudentData] = useState<any>(null);
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const user = getCurrentUser();
 
   useEffect(() => {
     const fetchStudentData = async () => {
-      if (!user || !user.email) return;
+      if (!user || !user.email) {
+        setError("User information not available. Please log in again.");
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
+        setError(null);
+        
+        console.log('Attempting to fetch student data for parent email:', user.email);
         
         // Fetch student details where parents_email matches the logged-in parent's email
         const { data: students, error: studentError } = await supabase
@@ -33,10 +41,10 @@ const ParentDashboard = () => {
           .single();
           
         if (studentError) {
-          console.error('Error fetching student data:', studentError);
-          toast.error('Failed to load student information');
+          console.error('Error fetching student data by parent email:', studentError);
           
           // Fallback: try to get student via parent record if direct match fails
+          console.log('Attempting fallback with parent record lookup');
           const { data: parentData, error: parentError } = await supabase
             .from('parents')
             .select('student_id')
@@ -45,9 +53,12 @@ const ParentDashboard = () => {
             
           if (parentError || !parentData || !parentData.student_id) {
             console.error('Error fetching parent data:', parentError);
+            setError("No student information found for this parent account. Please contact an administrator.");
             setLoading(false);
             return;
           }
+          
+          console.log('Found student_id from parent record:', parentData.student_id);
           
           // Try to fetch student with student_id from parent record
           const { data: studentFromParent, error: studentFromParentError } = await supabase
@@ -58,22 +69,32 @@ const ParentDashboard = () => {
             
           if (studentFromParentError) {
             console.error('Error fetching student via parent relation:', studentFromParentError);
-            toast.error('Failed to load student information');
+            setError("Could not retrieve student information. Please contact an administrator.");
             setLoading(false);
             return;
           }
           
+          if (!studentFromParent) {
+            setError("No student data found with the linked student ID.");
+            setLoading(false);
+            return;
+          }
+          
+          console.log('Successfully fetched student data via parent relation');
           setStudentData(studentFromParent);
           setLoading(false);
           return;
         }
         
         if (students) {
+          console.log('Successfully fetched student data directly');
           setStudentData(students);
+        } else {
+          setError("No student information found.");
         }
       } catch (error) {
-        console.error('Error fetching student data:', error);
-        toast.error('An error occurred while loading data');
+        console.error('Unexpected error fetching student data:', error);
+        setError("An unexpected error occurred. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -84,12 +105,20 @@ const ParentDashboard = () => {
   
   const submitFeedback = async () => {
     if (!feedback.trim()) {
-      toast.error('Please enter feedback before submitting');
+      toast({
+        title: "Error",
+        description: "Please enter feedback before submitting",
+        variant: "destructive"
+      });
       return;
     }
     
     if (!user || !user.id) {
-      toast.error('You must be logged in to submit feedback');
+      toast({
+        title: "Error",
+        description: "You must be logged in to submit feedback",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -104,8 +133,12 @@ const ParentDashboard = () => {
         .single();
         
       if (parentError || !parentData) {
-        toast.error('Could not find your parent record');
         console.error('Error finding parent record:', parentError);
+        toast({
+          title: "Error",
+          description: "Could not find your parent record",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -116,22 +149,40 @@ const ParentDashboard = () => {
         .eq('id', parentData.id);
         
       if (updateError) {
-        toast.error('Failed to submit feedback');
         console.error('Error submitting feedback:', updateError);
+        toast({
+          title: "Error",
+          description: "Failed to submit feedback",
+          variant: "destructive"
+        });
         return;
       }
       
-      toast.success('Feedback submitted successfully');
+      toast({
+        title: "Success",
+        description: "Feedback submitted successfully",
+      });
       setFeedback('');
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast.error('An error occurred while submitting feedback');
+      toast({
+        title: "Error",
+        description: "An error occurred while submitting feedback",
+        variant: "destructive"
+      });
     } finally {
       setSubmitting(false);
     }
   };
   
-  // Dummy progress data
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    // Force re-fetch by triggering useEffect
+    setStudentData(null);
+  };
+  
+  // Dummy progress data - would be fetched from an API in a real application
   const progressData = [
     { skill: 'Communication', progress: 75, lastAssessment: '2023-10-15' },
     { skill: 'Fine Motor Skills', progress: 60, lastAssessment: '2023-10-10' },
@@ -151,6 +202,8 @@ const ParentDashboard = () => {
             <div className="flex justify-center items-center h-64">
               <LoadingSpinner size="lg" />
             </div>
+          ) : error ? (
+            <ErrorDisplay message={error} onRetry={handleRetry} />
           ) : studentData ? (
             <Card>
               <CardHeader>
@@ -322,7 +375,7 @@ const ParentDashboard = () => {
           </Card>
         </div>
         
-        {/* Progress Tracking Section (replacing AnnouncementBoard) */}
+        {/* Progress Tracking Section */}
         <div>
           <Card className="shadow-lg border-t-4 border-ishanya-green">
             <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg">
@@ -363,3 +416,4 @@ const ParentDashboard = () => {
 };
 
 export default ParentDashboard;
+
