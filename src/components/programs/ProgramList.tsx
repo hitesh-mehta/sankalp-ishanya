@@ -64,7 +64,7 @@ const ProgramList = ({ center, onSelectProgram }: ProgramListProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
       {programs.map((program) => (
-        <ProgramCard key={program.id} program={program} onClick={onSelectProgram} />
+        <ProgramCard key={program.program_id} program={program} onClick={onSelectProgram} />
       ))}
     </div>
   );
