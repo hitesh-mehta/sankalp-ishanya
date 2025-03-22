@@ -82,39 +82,43 @@ const CsvUpload = ({ tableName, onSuccess, onClose }: CsvUploadProps) => {
       //     setIsUploading(false);
       //   }
       // });
-      Papa.parse(text, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        const rows = results.data.map((row) =>
-          Object.fromEntries(
-            Object.entries(row).map(([key, value]) => [key, value.trim() === "" ? null : value])
-          )
-        );
-    
-        console.log(`Processed rows for ${tableName}:`, rows);
-    
-        try {
-          const result = await bulkInsert(tableName, rows);
-          setIsUploading(false);
-    
-          if (result.success) {
-            toast.success(result.message);
-            onSuccess();
-            if (onClose) onClose();
-          } else {
-            setError(result.message);
+     Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
+          const rows = results.data.map((row) =>
+            Object.fromEntries(
+              Object.entries(row).map(([key, value]) => {
+                const trimmedValue = typeof value === "string" ? value.trim() : value;
+                return [key, trimmedValue === "" ? null : trimmedValue];
+              })
+            )
+          );
+      
+          console.log(`Processed rows for ${tableName}:`, rows); // Debugging
+      
+          try {
+            const result = await bulkInsert(tableName, rows);
+            setIsUploading(false);
+      
+            if (result.success) {
+              toast.success(result.message);
+              onSuccess();
+              if (onClose) onClose();
+            } else {
+              setError(result.message);
+            }
+          } catch (err: any) {
+            setError(err.message || 'Error uploading data');
+            setIsUploading(false);
           }
-        } catch (err: any) {
-          setError(err.message || 'Error uploading data');
+        },
+        error: (error) => {
+          setError(`CSV parsing error: ${error.message}`);
           setIsUploading(false);
-        }
-      },
-      error: (error) => {
-        setError(`CSV parsing error: ${error.message}`);
-        setIsUploading(false);
-      },
-    });
+        },
+      });
+
 
     } catch (err: any) {
       setError(err.message || 'Error reading file');
