@@ -54,7 +54,11 @@ const TableActions = ({ tableName, onInsert, onRefresh }: TableActionsProps) => 
           <DialogHeader>
             <DialogTitle className="text-ishanya-green">Import CSV Data</DialogTitle>
           </DialogHeader>
-          <CsvUpload tableName={tableName} onClose={() => setIsUploadOpen(false)} onSuccess={onRefresh} />
+          <CsvUpload 
+            tableName={tableName} 
+            onClose={() => setIsUploadOpen(false)} 
+            onSuccess={onRefresh} 
+          />
         </DialogContent>
       </Dialog>
     </div>

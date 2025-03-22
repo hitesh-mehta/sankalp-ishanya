@@ -10,9 +10,10 @@ import { toast } from 'sonner';
 type CsvUploadProps = {
   tableName: string;
   onSuccess: () => void;
+  onClose?: () => void; // Added onClose as an optional prop
 };
 
-const CsvUpload = ({ tableName, onSuccess }: CsvUploadProps) => {
+const CsvUpload = ({ tableName, onSuccess, onClose }: CsvUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
@@ -99,6 +100,10 @@ const CsvUpload = ({ tableName, onSuccess }: CsvUploadProps) => {
               fileInputRef.current.value = '';
             }
             onSuccess();
+            // If onClose is provided, call it
+            if (onClose) {
+              onClose();
+            }
           }
         } catch (err) {
           console.error('Upload error:', err);
