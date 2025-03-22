@@ -54,17 +54,18 @@ type ValidationRule = {
 // Validation rules for different table types
 export const validationRules: Record<string, Record<string, ValidationRule>> = {
   Students: {
-    name: { required: true, message: 'Student name is required' },
-    age: { required: true, min: 5, max: 25, message: 'Age must be between 5 and 25' },
-    grade: { required: true, message: 'Grade is required' },
-    enrollment_date: { required: true, message: 'Enrollment date is required' },
-    email: { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' },
-    phone: { pattern: /^\+?[0-9\s-]{10,15}$/, message: 'Please enter a valid phone number' },
-    center_id: { required: true, message: 'Center is required' }
+    first_name: { required: true, message: 'First name is required' },
+    last_name: { required: true, message: 'Last name is required' },
+    center_id: { required: true, message: 'Center is required' },
+    program_id: { required: true, message: 'Program is required' }
   },
   Educators: {
     name: { required: true, message: 'Educator name is required' },
-    subject: { required: true, message: 'Subject is required' },
+    email: { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' },
+    center_id: { required: true, message: 'Center is required' }
+  },
+  Employees: {
+    name: { required: true, message: 'Employee name is required' },
     email: { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' },
     center_id: { required: true, message: 'Center is required' }
   }
@@ -259,8 +260,10 @@ export const validateData = (tableName: string, data: Record<string, any>): { is
   const errors: Record<string, string> = {};
   let isValid = true;
   
+  // Determine table type based on name
   const tableType = tableName.toLowerCase().includes('student') ? 'Students' : 
-                    tableName.toLowerCase().includes('educator') ? 'Educators' : 'Courses';
+                    tableName.toLowerCase().includes('educator') ? 'Educators' :
+                    tableName.toLowerCase().includes('employee') ? 'Employees' : 'Other';
   
   const rules = validationRules[tableType] || {};
   

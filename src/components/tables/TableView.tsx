@@ -50,8 +50,10 @@ const TableView = ({ table }: TableViewProps) => {
       console.log(`Fetching columns for table ${table.name}`);
       const tableColumns = await fetchTableColumns(table.name);
       if (tableColumns) {
-        console.log(`Columns for ${table.name}:`, tableColumns);
-        setAllColumns(tableColumns);
+        // Filter out the uuid id field from display columns
+        const filteredColumns = tableColumns.filter(col => col !== 'id');
+        console.log(`Columns for ${table.name} (filtered):`, filteredColumns);
+        setAllColumns(tableColumns); // Keep all columns for data operations
       } else {
         console.error(`No columns returned for ${table.name}`);
       }
@@ -64,34 +66,44 @@ const TableView = ({ table }: TableViewProps) => {
         setData(result);
         setFilteredData(result);
         
-        // Extract display columns based on table type
+        // Extract display columns based on table type, excluding the UUID id field
         if (result.length > 0) {
           if (table.name.toLowerCase().includes('student')) {
-            // Specific columns for students
+            // Specific columns for students - note: excluding 'id' (UUID)
             const studentColumns = [
-              'id', 'student_id', 'first_name', 'last_name', 'email', 
+              'student_id', 'first_name', 'last_name', 'student_email', 
               'program_id', 'center_id', 'primary_diagnosis', 'status'
             ];
             setColumns(studentColumns.filter(col => Object.keys(result[0]).includes(col)));
           } else if (table.name.toLowerCase().includes('educator')) {
-            // Specific columns for educators
+            // Specific columns for educators - note: excluding 'id' (UUID)
             const educatorColumns = [
-              'id', 'employee_id', 'name', 'email', 'designation', 
+              'employee_id', 'name', 'email', 'designation', 
               'phone', 'center_id', 'program_id'
             ];
             setColumns(educatorColumns.filter(col => Object.keys(result[0]).includes(col)));
+          } else if (table.name.toLowerCase().includes('employee')) {
+            // Specific columns for employees - note: excluding 'id' (UUID)
+            const employeeColumns = [
+              'employee_id', 'name', 'email', 'designation', 
+              'department', 'phone', 'center_id', 'status'
+            ];
+            setColumns(employeeColumns.filter(col => Object.keys(result[0]).includes(col)));
           } else {
-            // For other tables, show important columns
-            const availableColumns = Object.keys(result[0]);
+            // For other tables, show important columns, excluding 'id' (UUID)
+            const availableColumns = Object.keys(result[0]).filter(col => col !== 'id');
             const importantColumns = [
-              'id', 'name', 'subject', 'email', 'phone', 'center_id', 'program_id'
+              'name', 'subject', 'email', 'phone', 'center_id', 'program_id'
             ].filter(col => availableColumns.includes(col));
             
             setColumns(importantColumns.length >= 5 ? importantColumns : availableColumns.slice(0, 6));
           }
         } else {
-          // If no data, use available columns or defaults
-          setColumns(tableColumns?.slice(0, 6) || ['id', 'name', 'center_id', 'program_id']);
+          // If no data, use available columns or defaults, excluding 'id' (UUID)
+          const defaultColumns = tableColumns ? 
+            tableColumns.filter(col => col !== 'id').slice(0, 6) : 
+            ['name', 'center_id', 'program_id'];
+          setColumns(defaultColumns);
         }
       } else {
         console.error(`Failed to load data from ${table.name}`);
@@ -194,7 +206,7 @@ const TableView = ({ table }: TableViewProps) => {
       const formattedData = { ...editingRow };
       
       // Convert numeric fields to numbers
-      ['center_id', 'program_id', 'age', 'grade', 'enrollment_year'].forEach(field => {
+      ['center_id', 'program_id', 'student_id', 'employee_id', 'enrollment_year'].forEach(field => {
         if (formattedData[field] !== undefined && formattedData[field] !== '') {
           const numValue = Number(formattedData[field]);
           formattedData[field] = isNaN(numValue) ? formattedData[field] : numValue;
@@ -281,7 +293,7 @@ const TableView = ({ table }: TableViewProps) => {
       const formattedData = { ...newRow };
       
       // Convert numeric fields to numbers
-      ['center_id', 'program_id', 'age', 'grade', 'enrollment_year'].forEach(field => {
+      ['center_id', 'program_id', 'student_id', 'employee_id', 'enrollment_year'].forEach(field => {
         if (formattedData[field] !== undefined && formattedData[field] !== '') {
           const numValue = Number(formattedData[field]);
           formattedData[field] = isNaN(numValue) ? formattedData[field] : numValue;
@@ -533,13 +545,14 @@ const TableView = ({ table }: TableViewProps) => {
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
             {allColumns
-              .filter(column => column !== 'id') // Don't show ID field for insertion
+              .filter(column => column !== 'id' && column !== 'created_at') // Don't show ID or created_at field for insertion
               .map((column) => (
                 <div key={column} className="space-y-2">
                   <Label htmlFor={`insert-${column}`} className="text-sm text-gray-700 flex items-center">
                     {column}
-                    {column === 'center_id' || column === 'program_id' || column === 'name' 
-                      || column === 'first_name' || column === 'last_name' ? (
+                    {(column === 'center_id' || column === 'program_id' || 
+                      column === 'name' || column === 'first_name' || 
+                      column === 'last_name' || column === 'email') ? (
                       <span className="text-red-500 ml-1">*</span>
                     ) : null}
                   </Label>
@@ -579,7 +592,7 @@ const TableView = ({ table }: TableViewProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Detailed View Dialog */}
+      {/* Detailed View Dialog - Enhanced to allow editing */}
       <Dialog open={isDetailedViewOpen} onOpenChange={setIsDetailedViewOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -589,13 +602,24 @@ const TableView = ({ table }: TableViewProps) => {
           </DialogHeader>
           {detailedViewRow && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-2">
-              {allColumns.map(column => (
+              {allColumns
+                .filter(column => column !== 'id' && column !== 'created_at') // Hide UUID and created_at
+                .map(column => (
                 <div key={column} className="space-y-1 border-b pb-2">
                   <Label className="text-xs text-gray-500">{column}</Label>
                   <div className="font-medium text-gray-800">
-                    {detailedViewRow[column] !== undefined && detailedViewRow[column] !== null 
-                      ? String(detailedViewRow[column]) 
-                      : '-'}
+                    <Input
+                      value={detailedViewRow[column] !== undefined && detailedViewRow[column] !== null 
+                        ? String(detailedViewRow[column]) 
+                        : ''}
+                      onChange={(e) => {
+                        setDetailedViewRow({
+                          ...detailedViewRow,
+                          [column]: e.target.value
+                        });
+                      }}
+                      className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
+                    />
                   </div>
                 </div>
               ))}
@@ -603,21 +627,36 @@ const TableView = ({ table }: TableViewProps) => {
           )}
           <div className="flex justify-end mt-4">
             <Button
+              variant="default"
+              onClick={() => {
+                // Save the changes from detailed view
+                if (detailedViewRow) {
+                  setEditingRow(detailedViewRow);
+                  setIsDetailedViewOpen(false);
+                  handleSaveEdit();
+                }
+              }}
+              className="mr-2 bg-ishanya-green hover:bg-ishanya-green/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save Changes
+            </Button>
+            <Button
               variant="outline"
               onClick={() => {
-                handleEditClick(detailedViewRow);
                 setIsDetailedViewOpen(false);
               }}
-              className="mr-2 border-ishanya-green text-ishanya-green hover:bg-ishanya-green/10"
+              className="mr-2 border-gray-300 text-gray-700"
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+              Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={() => {
-                handleDeleteRow(detailedViewRow.id);
-                setIsDetailedViewOpen(false);
+                if (detailedViewRow) {
+                  handleDeleteRow(detailedViewRow.id);
+                  setIsDetailedViewOpen(false);
+                }
               }}
             >
               <Trash className="h-4 w-4 mr-2" />
