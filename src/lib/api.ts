@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -56,17 +57,14 @@ export const validationRules: Record<string, Record<string, ValidationRule>> = {
   Students: {
     first_name: { required: true, message: 'First name is required' },
     last_name: { required: true, message: 'Last name is required' },
-    center_id: { required: true, message: 'Center is required' },
-    program_id: { required: true, message: 'Program is required' }
+    center_id: { required: true, message: 'Center is required' }
   },
   Educators: {
     name: { required: true, message: 'Educator name is required' },
-    email: { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' },
     center_id: { required: true, message: 'Center is required' }
   },
   Employees: {
     name: { required: true, message: 'Employee name is required' },
-    email: { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' },
     center_id: { required: true, message: 'Center is required' }
   }
 };
@@ -158,6 +156,7 @@ export const fetchTablesByProgram = async (programId: number): Promise<TableInfo
     const center_id = programData.center_id;
     console.log(`Found center_id ${center_id} for program_id ${programId}`);
     
+    // Excluding the courses table as requested
     const tables: TableInfo[] = [
       { 
         id: 1, 
@@ -173,14 +172,6 @@ export const fetchTablesByProgram = async (programId: number): Promise<TableInfo
         program_id: programId, 
         description: 'Educator information',
         display_name: 'Educators',
-        center_id: center_id
-      },
-      { 
-        id: 3, 
-        name: 'courses', 
-        program_id: programId, 
-        description: 'Course details',
-        display_name: 'Courses',
         center_id: center_id
       }
     ];
@@ -333,8 +324,16 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
   try {
     console.log(`Inserting row into ${tableName} with data:`, rowData);
     
+    // Always add created_at timestamp
+    const dataWithTimestamp = {
+      ...rowData,
+      created_at: new Date().toISOString()
+    };
+    
+    console.log('Data with timestamp:', dataWithTimestamp);
+    
     // Validate the data before inserting
-    const { isValid, errors } = validateData(tableName, rowData);
+    const { isValid, errors } = validateData(tableName, dataWithTimestamp);
     
     if (!isValid) {
       toast.error('Please correct the validation errors');
@@ -342,14 +341,14 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
     }
     
     // Remove ID if it's empty (for auto-generated IDs)
-    if (!rowData.id) {
-      delete rowData.id;
+    if (!dataWithTimestamp.id) {
+      delete dataWithTimestamp.id;
     }
     
     // Insert into the actual table
     const { data, error } = await supabase
       .from(tableName.toLowerCase())
-      .insert(rowData)
+      .insert(dataWithTimestamp)
       .select();
     
     if (error) {
@@ -381,6 +380,11 @@ export const insertRow = async (tableName: string, rowData: any): Promise<{ succ
 export const updateRow = async (tableName: string, id: number, rowData: any): Promise<{ success: boolean; errors?: Record<string, string>; data?: any }> => {
   try {
     console.log(`Updating row in ${tableName} with id ${id}:`, rowData);
+    
+    // Make sure we're not trying to update created_at with an empty string
+    if (rowData.created_at === '') {
+      rowData.created_at = new Date().toISOString();
+    }
     
     // Validate the data before updating
     const { isValid, errors } = validateData(tableName, rowData);

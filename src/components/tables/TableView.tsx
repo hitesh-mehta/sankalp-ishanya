@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { TableInfo, fetchTableData, deleteRow, updateRow, insertRow, fetchTableColumns, validateData } from '@/lib/api';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -54,6 +53,7 @@ const TableView = ({ table }: TableViewProps) => {
         const filteredColumns = tableColumns.filter(col => col !== 'id');
         console.log(`Columns for ${table.name} (filtered):`, filteredColumns);
         setAllColumns(tableColumns); // Keep all columns for data operations
+        setColumns(filteredColumns); // Use filtered columns for display
       } else {
         console.error(`No columns returned for ${table.name}`);
       }
@@ -65,46 +65,6 @@ const TableView = ({ table }: TableViewProps) => {
         console.log(`Loaded ${result.length} records from ${table.name}:`, result);
         setData(result);
         setFilteredData(result);
-        
-        // Extract display columns based on table type, excluding the UUID id field
-        if (result.length > 0) {
-          if (table.name.toLowerCase().includes('student')) {
-            // Specific columns for students - note: excluding 'id' (UUID)
-            const studentColumns = [
-              'student_id', 'first_name', 'last_name', 'student_email', 
-              'program_id', 'center_id', 'primary_diagnosis', 'status'
-            ];
-            setColumns(studentColumns.filter(col => Object.keys(result[0]).includes(col)));
-          } else if (table.name.toLowerCase().includes('educator')) {
-            // Specific columns for educators - note: excluding 'id' (UUID)
-            const educatorColumns = [
-              'employee_id', 'name', 'email', 'designation', 
-              'phone', 'center_id', 'program_id'
-            ];
-            setColumns(educatorColumns.filter(col => Object.keys(result[0]).includes(col)));
-          } else if (table.name.toLowerCase().includes('employee')) {
-            // Specific columns for employees - note: excluding 'id' (UUID)
-            const employeeColumns = [
-              'employee_id', 'name', 'email', 'designation', 
-              'department', 'phone', 'center_id', 'status'
-            ];
-            setColumns(employeeColumns.filter(col => Object.keys(result[0]).includes(col)));
-          } else {
-            // For other tables, show important columns, excluding 'id' (UUID)
-            const availableColumns = Object.keys(result[0]).filter(col => col !== 'id');
-            const importantColumns = [
-              'name', 'subject', 'email', 'phone', 'center_id', 'program_id'
-            ].filter(col => availableColumns.includes(col));
-            
-            setColumns(importantColumns.length >= 5 ? importantColumns : availableColumns.slice(0, 6));
-          }
-        } else {
-          // If no data, use available columns or defaults, excluding 'id' (UUID)
-          const defaultColumns = tableColumns ? 
-            tableColumns.filter(col => col !== 'id').slice(0, 6) : 
-            ['name', 'center_id', 'program_id'];
-          setColumns(defaultColumns);
-        }
       } else {
         console.error(`Failed to load data from ${table.name}`);
         setError('Failed to load table data. Please try again.');
@@ -261,6 +221,8 @@ const TableView = ({ table }: TableViewProps) => {
           initialNewRow[column] = table.center_id;
         } else if (column === 'program_id' && table.program_id) {
           initialNewRow[column] = table.program_id;
+        } else if (column === 'created_at') {
+          initialNewRow[column] = new Date().toISOString(); // Add timestamp for created_at
         } else {
           initialNewRow[column] = '';
         }
@@ -291,6 +253,11 @@ const TableView = ({ table }: TableViewProps) => {
     try {
       // Format values appropriately based on column types
       const formattedData = { ...newRow };
+      
+      // Ensure created_at is set
+      if (!formattedData.created_at) {
+        formattedData.created_at = new Date().toISOString();
+      }
       
       // Convert numeric fields to numbers
       ['center_id', 'program_id', 'student_id', 'employee_id', 'enrollment_year'].forEach(field => {
