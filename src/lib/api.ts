@@ -1,18 +1,13 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-// These need to be replaced with actual values from your Supabase account
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-supabase-url.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY || 'your-supabase-key';
+// Using the provided Supabase credentials
+const supabaseUrl = 'https://nizvcdssajfpjtncbojx.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5penZjZHNzYWpmcGp0bmNib2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2MTU0ODksImV4cCI6MjA1ODE5MTQ4OX0.5b2Yzfzzzz-C8S6iqhG3SinKszlgjdd4NUxogWIxCLc';
 
-// Add more helpful error message for development
+// Function to check if Supabase credentials are configured
 const checkSupabaseConfig = () => {
-  if (supabaseUrl === 'https://your-supabase-url.supabase.co' || 
-      supabaseKey === 'your-supabase-key') {
-    console.error('⚠️ Default Supabase credentials detected. Please set your actual Supabase URL and key.');
-    return false;
-  }
+  // Since we're using hardcoded credentials now, this always returns true
   return true;
 };
 
