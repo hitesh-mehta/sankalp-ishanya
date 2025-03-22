@@ -2,6 +2,7 @@
 import { PropsWithChildren } from 'react';
 import Navbar from './Navbar';
 import Header from './Header';
+import DashboardNav from './DashboardNav';
 
 type LayoutProps = PropsWithChildren<{
   title: string;
@@ -29,6 +30,7 @@ const Layout = ({
         onBack={onBack}
         showBackButton={showBackButton}
       />
+      <DashboardNav />
       <Header title={title} subtitle={subtitle} />
       <main className="flex-1 w-full px-4 md:px-8 py-6 max-w-screen-2xl mx-auto">
         {children}
