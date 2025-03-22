@@ -20,45 +20,56 @@ const ParentDashboard = () => {
 
   useEffect(() => {
     const fetchStudentData = async () => {
-      if (!user || !user.id) return;
+      if (!user || !user.email) return;
       
       try {
         setLoading(true);
         
-        // First get the parent record to find the linked student_id
-        const { data: parentData, error: parentError } = await supabase
-          .from('parents')
-          .select('student_id')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (parentError) {
-          console.error('Error fetching parent data:', parentError);
-          toast.error('Failed to load parent information');
-          return;
-        }
-        
-        if (!parentData || !parentData.student_id) {
-          toast.error('No student linked to this parent account');
-          setLoading(false);
-          return;
-        }
-        
-        // Fetch student details using the student_id from parent record
-        const { data: student, error: studentError } = await supabase
+        // Fetch student details where parents_email matches the logged-in parent's email
+        const { data: students, error: studentError } = await supabase
           .from('students')
           .select('*, programs(*)')
-          .eq('student_id', parentData.student_id)
+          .eq('parents_email', user.email)
           .single();
           
         if (studentError) {
           console.error('Error fetching student data:', studentError);
           toast.error('Failed to load student information');
+          
+          // Fallback: try to get student via parent record if direct match fails
+          const { data: parentData, error: parentError } = await supabase
+            .from('parents')
+            .select('student_id')
+            .eq('email', user.email)
+            .single();
+            
+          if (parentError || !parentData || !parentData.student_id) {
+            console.error('Error fetching parent data:', parentError);
+            setLoading(false);
+            return;
+          }
+          
+          // Try to fetch student with student_id from parent record
+          const { data: studentFromParent, error: studentFromParentError } = await supabase
+            .from('students')
+            .select('*, programs(*)')
+            .eq('student_id', parentData.student_id)
+            .single();
+            
+          if (studentFromParentError) {
+            console.error('Error fetching student via parent relation:', studentFromParentError);
+            toast.error('Failed to load student information');
+            setLoading(false);
+            return;
+          }
+          
+          setStudentData(studentFromParent);
+          setLoading(false);
           return;
         }
         
-        if (student) {
-          setStudentData(student);
+        if (students) {
+          setStudentData(students);
         }
       } catch (error) {
         console.error('Error fetching student data:', error);
