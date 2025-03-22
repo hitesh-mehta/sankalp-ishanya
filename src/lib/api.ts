@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -66,7 +65,9 @@ export const validationRules: Record<string, Record<string, ValidationRule>> = {
   },
   Employees: {
     name: { required: true, message: 'Employee name is required' },
-    center_id: { required: true, message: 'Center is required' }
+    center_id: { required: true, message: 'Center is required' },
+    email: { required: true, message: 'Email is required' },
+    password: { required: true, message: 'Password is required' }
   }
 };
 
@@ -601,5 +602,7 @@ export const bulkInsert = async (tableName: string, rows: any[]): Promise<{ succ
     return { success: false, message: error.message };
   }
 };
+
+export { authenticateUser } from './auth';
 
 export default supabase;
