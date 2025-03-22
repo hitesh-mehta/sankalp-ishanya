@@ -42,46 +42,80 @@ const CsvUpload = ({ tableName, onSuccess, onClose }: CsvUploadProps) => {
     try {
       const text = await file.text();
       
-      Papa.parse(text, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async (results) => {
-          if (results.errors.length > 0) {
-            setError(`CSV parsing error: ${results.errors[0].message}`);
-            setIsUploading(false);
-            return;
-          }
+      // Papa.parse(text, {
+      //   header: true,
+      //   skipEmptyLines: true,
+      //   complete: async (results) => {
+      //     if (results.errors.length > 0) {
+      //       setError(`CSV parsing error: ${results.errors[0].message}`);
+      //       setIsUploading(false);
+      //       return;
+      //     }
           
-          const rows = results.data as Record<string, any>[];
-          console.log(`Parsed ${rows.length} rows from CSV for ${tableName}`, rows);
+      //     const rows = results.data as Record<string, any>[];
+      //     console.log(`Parsed ${rows.length} rows from CSV for ${tableName}`, rows);
           
-          if (rows.length === 0) {
-            setError('CSV file contains no data');
-            setIsUploading(false);
-            return;
-          }
+      //     if (rows.length === 0) {
+      //       setError('CSV file contains no data');
+      //       setIsUploading(false);
+      //       return;
+      //     }
           
-          try {
-            const result = await bulkInsert(tableName, rows);
-            setIsUploading(false);
+      //     try {
+      //       const result = await bulkInsert(tableName, rows);
+      //       setIsUploading(false);
             
-            if (result.success) {
-              toast.success(result.message);
-              onSuccess();
-              if (onClose) onClose(); // Call onClose if provided
-            } else {
-              setError(result.message);
-            }
-          } catch (err: any) {
-            setError(err.message || 'Error uploading data');
-            setIsUploading(false);
+      //       if (result.success) {
+      //         toast.success(result.message);
+      //         onSuccess();
+      //         if (onClose) onClose(); // Call onClose if provided
+      //       } else {
+      //         setError(result.message);
+      //       }
+      //     } catch (err: any) {
+      //       setError(err.message || 'Error uploading data');
+      //       setIsUploading(false);
+      //     }
+      //   },
+      //   error: (error) => {
+      //     setError(`CSV parsing error: ${error.message}`);
+      //     setIsUploading(false);
+      //   }
+      // });
+      Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const rows = results.data.map((row) =>
+          Object.fromEntries(
+            Object.entries(row).map(([key, value]) => [key, value.trim() === "" ? null : value])
+          )
+        );
+    
+        console.log(`Processed rows for ${tableName}:`, rows);
+    
+        try {
+          const result = await bulkInsert(tableName, rows);
+          setIsUploading(false);
+    
+          if (result.success) {
+            toast.success(result.message);
+            onSuccess();
+            if (onClose) onClose();
+          } else {
+            setError(result.message);
           }
-        },
-        error: (error) => {
-          setError(`CSV parsing error: ${error.message}`);
+        } catch (err: any) {
+          setError(err.message || 'Error uploading data');
           setIsUploading(false);
         }
-      });
+      },
+      error: (error) => {
+        setError(`CSV parsing error: ${error.message}`);
+        setIsUploading(false);
+      },
+    });
+
     } catch (err: any) {
       setError(err.message || 'Error reading file');
       setIsUploading(false);
