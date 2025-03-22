@@ -5,11 +5,13 @@ import { toast } from 'sonner';
 // Define user types
 export type User = {
   id: string;
-  employee_id: number;
+  employee_id?: number;
+  parent_id?: number;
+  student_id?: number; // For parent to know which student they're linked to
   name: string;
   email: string;
   isAdmin: boolean;
-  center_id: number;
+  center_id?: number;
   department?: string;
   designation?: string;
   role: 'administrator' | 'hr' | 'teacher' | 'parent';
@@ -101,31 +103,49 @@ export const authenticateUser = async (
         user 
       };
     } 
-    // For parent role, we would check a different table (parents table)
+    // For parent role, check the parents table
     else if (role === 'parent') {
-      // For demo purposes, let's just return a mock parent user
-      // In a real application, this would check against a parents table in the database
-      if (email === 'parent@example.com' && password === 'parent') {
-        const parentUser: User = {
-          id: 'parent-123',
-          employee_id: 0, // Not applicable for parents
-          name: 'Demo Parent',
-          email: email,
-          isAdmin: false,
-          center_id: 91, // Assign to a default center
-          role: 'parent'
-        };
-        
-        console.log('Parent user authenticated:', parentUser);
-        return {
-          success: true,
-          user: parentUser
+      // Query the parents table in Supabase
+      const { data: parents, error } = await supabase
+        .from('parents')
+        .select('*, students!inner(*)')
+        .eq('email', email)
+        .eq('password', password) // In a real app, this should use hashed passwords with bcrypt
+        .limit(1);
+      
+      if (error) {
+        console.error('Parent authentication error:', error);
+        return { 
+          success: false, 
+          message: 'An error occurred during parent authentication' 
         };
       }
       
+      if (!parents || parents.length === 0) {
+        return { 
+          success: false, 
+          message: 'Invalid parent credentials' 
+        };
+      }
+      
+      const parent = parents[0];
+      
+      // Create parent user object
+      const parentUser: User = {
+        id: parent.id,
+        parent_id: parent.parent_id || 0,
+        student_id: parent.students?.[0]?.student_id || 0,
+        name: parent.name || 'Parent',
+        email: parent.email,
+        isAdmin: false,
+        center_id: parent.center_id,
+        role: 'parent'
+      };
+      
+      console.log('Parent user authenticated:', parentUser);
       return {
-        success: false,
-        message: 'Invalid parent credentials'
+        success: true,
+        user: parentUser
       };
     }
     
@@ -171,7 +191,7 @@ export const logout = (): void => {
 // Check if user is admin
 export const isAdmin = (): boolean => {
   const user = getCurrentUser();
-  return user ? user.isAdmin : false;
+  return user ? user.isAdmin || user.role === 'administrator' : false;
 };
 
 // Check user role
