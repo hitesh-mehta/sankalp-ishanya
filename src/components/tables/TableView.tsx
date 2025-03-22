@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { TableInfo, fetchTableData, deleteRow, updateRow, insertRow, fetchTableColumns } from '@/lib/api';
+import { TableInfo, fetchTableData, deleteRow, updateRow, insertRow, fetchTableColumns, validateData } from '@/lib/api';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import ErrorDisplay from '../ui/ErrorDisplay';
 import TableActions from './TableActions';
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Edit, Trash, Save, Search, Filter, X, ChevronRight, Eye } from 'lucide-react';
+import { Edit, Trash, Save, Search, Filter, X, ChevronRight, Eye, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Table,
@@ -39,6 +39,7 @@ const TableView = ({ table }: TableViewProps) => {
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [detailedViewRow, setDetailedViewRow] = useState<any | null>(null);
   const [isDetailedViewOpen, setIsDetailedViewOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const loadTableData = async () => {
     setLoading(true);
@@ -51,24 +52,31 @@ const TableView = ({ table }: TableViewProps) => {
         setAllColumns(tableColumns);
       }
       
-      const result = await fetchTableData(table.name);
+      // Fetch data with center_id filter if available
+      const result = await fetchTableData(table.name, table.center_id);
       if (result) {
+        console.log(`Loaded ${result.length} records from ${table.name}`);
         setData(result);
         setFilteredData(result);
         
         // Extract display columns from the first row (basic info only)
         if (result.length > 0) {
           // For student tables, show a subset of columns for the initial view
-          if (table.name.startsWith('Students')) {
-            const basicColumns = ['id', 'name', 'age', 'grade', 'enrollment_date'];
+          if (table.name.toLowerCase().includes('student')) {
+            const basicColumns = ['id', 'name', 'age', 'grade', 'enrollment_date', 'center_id', 'program_id'];
             setColumns(basicColumns.filter(col => Object.keys(result[0]).includes(col)));
           } else {
-            // For other tables, show all columns
-            setColumns(Object.keys(result[0]));
+            // For other tables, show 6-8 most important columns
+            const availableColumns = Object.keys(result[0]);
+            const importantColumns = ['id', 'name', 'subject', 'email', 'phone', 'center_id', 'program_id']
+              .filter(col => availableColumns.includes(col));
+            
+            // Limit to 6-8 columns for better UI
+            setColumns(importantColumns.length >= 5 ? importantColumns : availableColumns.slice(0, 6));
           }
         } else {
           // If no data, use available columns or defaults
-          setColumns(tableColumns || ['id']);
+          setColumns(tableColumns?.slice(0, 6) || ['id', 'name', 'center_id', 'program_id']);
         }
       } else {
         setError('Failed to load table data. Please try again.');
@@ -83,7 +91,7 @@ const TableView = ({ table }: TableViewProps) => {
 
   useEffect(() => {
     loadTableData();
-  }, [table.id, table.name]);
+  }, [table.id, table.name, table.center_id]);
 
   // Apply search and filtering
   useEffect(() => {
@@ -92,8 +100,8 @@ const TableView = ({ table }: TableViewProps) => {
     // Apply search
     if (searchTerm) {
       result = result.filter(row => 
-        columns.some(column => 
-          String(row[column])
+        Object.entries(row).some(([key, value]) => 
+          String(value)
             .toLowerCase()
             .includes(searchTerm.toLowerCase())
         )
@@ -104,6 +112,7 @@ const TableView = ({ table }: TableViewProps) => {
     Object.entries(filterValues).forEach(([column, value]) => {
       if (value) {
         result = result.filter(row => 
+          row[column] !== undefined && 
           String(row[column])
             .toLowerCase()
             .includes(value.toLowerCase())
@@ -122,7 +131,7 @@ const TableView = ({ table }: TableViewProps) => {
 
   // Handle row deletion
   const handleDeleteRow = async (id: number) => {
-    if (window.confirm(`Are you sure you want to delete this row?`)) {
+    if (window.confirm(`Are you sure you want to delete this record?`)) {
       const success = await deleteRow(table.name, id);
       if (success) {
         loadTableData();
@@ -134,6 +143,7 @@ const TableView = ({ table }: TableViewProps) => {
   const handleEditClick = (row: any) => {
     setEditingRow({ ...row });
     setIsEditing(true);
+    setValidationErrors({}); // Clear any previous validation errors
   };
 
   const handleEditChange = (column: string, value: string) => {
@@ -141,29 +151,66 @@ const TableView = ({ table }: TableViewProps) => {
       ...editingRow,
       [column]: value,
     });
+    
+    // Clear validation error for this field
+    if (validationErrors[column]) {
+      const newErrors = { ...validationErrors };
+      delete newErrors[column];
+      setValidationErrors(newErrors);
+    }
   };
 
   const handleSaveEdit = async () => {
     if (!editingRow) return;
     
-    const success = await updateRow(table.name, editingRow.id, editingRow);
-    if (success) {
+    // Validate the data
+    const { isValid, errors } = validateData(table.name, editingRow);
+    
+    if (!isValid) {
+      setValidationErrors(errors);
+      toast.error('Please correct the validation errors');
+      return;
+    }
+    
+    const result = await updateRow(table.name, editingRow.id, editingRow);
+    if (result.success) {
       setIsEditing(false);
       setEditingRow(null);
+      setValidationErrors({});
       loadTableData();
+      
+      // Close detailed view if open
+      if (isDetailedViewOpen) {
+        setIsDetailedViewOpen(false);
+      }
+    } else if (result.errors) {
+      setValidationErrors(result.errors);
     }
   };
 
   // Handle row insertion
   const handleInsertClick = () => {
     // Initialize a new row with empty values for all available columns
-    const initialNewRow = allColumns.reduce((acc, column) => {
-      acc[column] = '';
-      return acc;
-    }, {} as Record<string, string>);
+    const initialNewRow: Record<string, any> = {};
+    
+    // Set default values
+    allColumns.forEach(column => {
+      // Don't set id - it will be auto-generated
+      if (column !== 'id') {
+        // Set default values for certain fields
+        if (column === 'center_id' && table.center_id) {
+          initialNewRow[column] = table.center_id;
+        } else if (column === 'program_id' && table.program_id) {
+          initialNewRow[column] = table.program_id;
+        } else {
+          initialNewRow[column] = '';
+        }
+      }
+    });
     
     setNewRow(initialNewRow);
     setIsInsertDialogOpen(true);
+    setValidationErrors({}); // Clear any previous validation errors
   };
 
   const handleInsertChange = (column: string, value: string) => {
@@ -171,20 +218,33 @@ const TableView = ({ table }: TableViewProps) => {
       ...newRow,
       [column]: value,
     });
+    
+    // Clear validation error for this field
+    if (validationErrors[column]) {
+      const newErrors = { ...validationErrors };
+      delete newErrors[column];
+      setValidationErrors(newErrors);
+    }
   };
 
   const handleInsertSubmit = async () => {
-    // Remove id if it's empty or auto-incremented
-    const rowToInsert = { ...newRow };
-    if (!rowToInsert.id) {
-      delete rowToInsert.id;
+    // Validate the data
+    const { isValid, errors } = validateData(table.name, newRow);
+    
+    if (!isValid) {
+      setValidationErrors(errors);
+      toast.error('Please correct the validation errors');
+      return;
     }
     
-    const success = await insertRow(table.name, rowToInsert);
-    if (success) {
+    const result = await insertRow(table.name, newRow);
+    if (result.success) {
       setIsInsertDialogOpen(false);
       setNewRow({});
+      setValidationErrors({});
       loadTableData();
+    } else if (result.errors) {
+      setValidationErrors(result.errors);
     }
   };
 
@@ -230,7 +290,7 @@ const TableView = ({ table }: TableViewProps) => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search table..."
+              placeholder="Search all columns..."
               className="pl-10 border-ishanya-green/30 focus-visible:ring-ishanya-green"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -295,6 +355,7 @@ const TableView = ({ table }: TableViewProps) => {
         )}
       </div>
       
+      {/* Data Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
         <div className="overflow-x-auto">
           <Table>
@@ -325,12 +386,19 @@ const TableView = ({ table }: TableViewProps) => {
                         className="py-3"
                       >
                         {isEditing && editingRow?.id === row.id ? (
-                          <Input
-                            value={editingRow[column] || ''}
-                            onChange={(e) => handleEditChange(column, e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
-                          />
+                          <div>
+                            <Input
+                              value={editingRow[column] || ''}
+                              onChange={(e) => handleEditChange(column, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
+                                validationErrors[column] ? 'border-red-500' : ''
+                              }`}
+                            />
+                            {validationErrors[column] && (
+                              <p className="text-red-500 text-xs mt-1">{validationErrors[column]}</p>
+                            )}
+                          </div>
                         ) : (
                           <div className="flex items-center">
                             <span className="truncate max-w-[200px]">{String(row[column] ?? '')}</span>
@@ -392,29 +460,49 @@ const TableView = ({ table }: TableViewProps) => {
       <Dialog open={isInsertDialogOpen} onOpenChange={setIsInsertDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-ishanya-green">Insert New Row</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-ishanya-green">Insert New Record</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
             {allColumns
               .filter(column => column !== 'id') // Don't show ID field for insertion
               .map((column) => (
                 <div key={column} className="space-y-2">
-                  <Label htmlFor={`insert-${column}`} className="text-sm text-gray-700">{column}</Label>
+                  <Label htmlFor={`insert-${column}`} className="text-sm text-gray-700 flex items-center">
+                    {column}
+                    {column === 'center_id' || column === 'program_id' || column === 'name' ? (
+                      <span className="text-red-500 ml-1">*</span>
+                    ) : null}
+                  </Label>
                   <Input
                     id={`insert-${column}`}
                     placeholder={`Enter ${column}`}
                     value={newRow[column] || ''}
                     onChange={(e) => handleInsertChange(column, e.target.value)}
-                    className="border-ishanya-green/30 focus-visible:ring-ishanya-green"
+                    className={`border-ishanya-green/30 focus-visible:ring-ishanya-green ${
+                      validationErrors[column] ? 'border-red-500' : ''
+                    }`}
                   />
+                  {validationErrors[column] && (
+                    <p className="text-red-500 text-xs">{validationErrors[column]}</p>
+                  )}
                 </div>
               ))}
+            
+            {validationErrors.general && (
+              <div className="col-span-1 md:col-span-2">
+                <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-md">
+                  <AlertCircle className="h-5 w-5" />
+                  <span>{validationErrors.general}</span>
+                </div>
+              </div>
+            )}
+            
             <div className="col-span-1 md:col-span-2 mt-4">
               <Button
                 onClick={handleInsertSubmit}
                 className="w-full bg-ishanya-green hover:bg-ishanya-green/90 shadow-md transition-all duration-300 hover:shadow-lg"
               >
-                Insert Row
+                Insert Record
               </Button>
             </div>
           </div>
@@ -426,7 +514,7 @@ const TableView = ({ table }: TableViewProps) => {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-ishanya-green">
-              {detailedViewRow ? `${table.name.replace('_', ' ')}: ${detailedViewRow.name || 'Details'}` : 'Row Details'}
+              {detailedViewRow ? `${table.display_name || table.name}: ${detailedViewRow.name || 'Details'}` : 'Record Details'}
             </DialogTitle>
           </DialogHeader>
           {detailedViewRow && (
