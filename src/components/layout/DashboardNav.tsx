@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Home, Users, LogOut, BookOpen, User, Bell } from 'lucide-react';
 import { logout, getCurrentUser, getUserRole } from '@/lib/auth';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import supabase from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -13,15 +13,18 @@ export function DashboardNav() {
   const user = getCurrentUser();
   const userRole = getUserRole();
   const [notificationCount, setNotificationCount] = useState(0);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    // Only fetch notifications for parents and teachers
-    if (user && ['parent', 'teacher'].includes(user.role)) {
+    // Only fetch notifications for parents and teachers and only once
+    if (user && ['parent', 'teacher'].includes(user.role) && !fetchedRef.current) {
+      fetchedRef.current = true; // Mark as fetched to prevent re-fetching
+      
       const fetchNotifications = async () => {
         try {
           const { data, error } = await supabase
             .from('announcements')
-            .select('count')
+            .select('*') // Select all columns instead of just 'count'
             .order('created_at', { ascending: false })
             .limit(5);
 
@@ -31,7 +34,7 @@ export function DashboardNav() {
           }
 
           if (data) {
-            // For this demo, just show a count of recent announcements
+            // Simply use the length of the data array
             setNotificationCount(data.length);
           }
         } catch (error) {
@@ -41,7 +44,7 @@ export function DashboardNav() {
 
       fetchNotifications();
     }
-  }, [user]);
+  }, [user]); // Only depends on user
 
   const handleLogout = () => {
     logout();

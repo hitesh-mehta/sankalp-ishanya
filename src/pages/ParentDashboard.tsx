@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ const ParentDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const user = getCurrentUser();
+  const initialized = useRef(false);
 
   // Redirect to the parent page which will handle detailed student info
   const handleViewDetails = () => {
@@ -23,7 +24,11 @@ const ParentDashboard = () => {
   };
   
   useEffect(() => {
-    let isMounted = true; // Add mounted flag to prevent state updates after unmount
+    // Use a ref to ensure this effect only runs once
+    if (initialized.current) return;
+    initialized.current = true;
+    
+    let isMounted = true; // Flag to prevent state updates after unmount
     
     const checkParentStatus = async () => {
       if (!user) {
@@ -35,8 +40,6 @@ const ParentDashboard = () => {
       }
       
       try {
-        if (!isMounted) return;
-        
         // Check if parent exists and has a student_id
         const { data: parentData, error: parentError } = await supabase
           .from('parents')
@@ -63,11 +66,14 @@ const ParentDashboard = () => {
 
         // If we have a parent record, we're good to go for the dashboard
         if (isMounted) {
-          toast({
-            title: "Welcome to your dashboard",
-            description: "View your child's details for more information",
-          });
-          setLoading(false); // Make sure to update loading state regardless of success
+          // Only show toast if loading was true (first load)
+          if (loading) {
+            toast({
+              title: "Welcome to your dashboard",
+              description: "View your child's details for more information",
+            });
+          }
+          setLoading(false);
         }
         
       } catch (error) {
@@ -85,7 +91,7 @@ const ParentDashboard = () => {
     return () => {
       isMounted = false;
     };
-  }, [user]); // Remove toast from dependency array
+  }, []); // Empty dependency array - only run once on mount
   
   return (
     <Layout
