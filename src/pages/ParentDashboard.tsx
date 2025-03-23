@@ -7,7 +7,7 @@ import ErrorDisplay from '@/components/ui/ErrorDisplay';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/auth';
 import supabase from '@/lib/api';
 
@@ -18,6 +18,7 @@ const ParentDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const user = getCurrentUser();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -33,68 +34,45 @@ const ParentDashboard = () => {
         
         console.log('Attempting to fetch student data for parent email:', user.email);
         
-        // Fetch student details where parents_email matches the logged-in parent's email
-        const { data: students, error: studentError } = await supabase
+        // First try: Fetch parent record to get student_id
+        const { data: parentData, error: parentError } = await supabase
+          .from('parents')
+          .select('student_id')
+          .eq('email', user.email)
+          .single();
+          
+        if (parentError) {
+          console.error('Error fetching parent data:', parentError);
+          throw new Error('Could not find parent record with provided email');
+        }
+        
+        if (!parentData || !parentData.student_id) {
+          throw new Error('No student linked to this parent account');
+        }
+        
+        console.log('Found student_id from parent record:', parentData.student_id);
+        
+        // Now fetch the student data using the student_id
+        const { data: student, error: studentError } = await supabase
           .from('students')
           .select('*, programs(*)')
-          .eq('parents_email', user.email)
+          .eq('student_id', parentData.student_id)
           .single();
           
         if (studentError) {
-          console.error('Error fetching student data by parent email:', studentError);
-          
-          // Fallback: try to get student via parent record if direct match fails
-          console.log('Attempting fallback with parent record lookup');
-          const { data: parentData, error: parentError } = await supabase
-            .from('parents')
-            .select('student_id')
-            .eq('email', user.email)
-            .single();
-            
-          if (parentError || !parentData || !parentData.student_id) {
-            console.error('Error fetching parent data:', parentError);
-            setError("No student information found for this parent account. Please contact an administrator.");
-            setLoading(false);
-            return;
-          }
-          
-          console.log('Found student_id from parent record:', parentData.student_id);
-          
-          // Try to fetch student with student_id from parent record
-          const { data: studentFromParent, error: studentFromParentError } = await supabase
-            .from('students')
-            .select('*, programs(*)')
-            .eq('student_id', parentData.student_id)
-            .single();
-            
-          if (studentFromParentError) {
-            console.error('Error fetching student via parent relation:', studentFromParentError);
-            setError("Could not retrieve student information. Please contact an administrator.");
-            setLoading(false);
-            return;
-          }
-          
-          if (!studentFromParent) {
-            setError("No student data found with the linked student ID.");
-            setLoading(false);
-            return;
-          }
-          
-          console.log('Successfully fetched student data via parent relation');
-          setStudentData(studentFromParent);
-          setLoading(false);
-          return;
+          console.error('Error fetching student via parent relation:', studentError);
+          throw new Error('Could not retrieve student information');
         }
         
-        if (students) {
-          console.log('Successfully fetched student data directly');
-          setStudentData(students);
-        } else {
-          setError("No student information found.");
+        if (!student) {
+          throw new Error('No student data found with the linked student ID');
         }
-      } catch (error) {
-        console.error('Unexpected error fetching student data:', error);
-        setError("An unexpected error occurred. Please try again later.");
+        
+        console.log('Successfully fetched student data via parent relation');
+        setStudentData(student);
+      } catch (err: any) {
+        console.error('Error in student data fetching:', err);
+        setError(err.message || "An unexpected error occurred. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -416,4 +394,3 @@ const ParentDashboard = () => {
 };
 
 export default ParentDashboard;
-
