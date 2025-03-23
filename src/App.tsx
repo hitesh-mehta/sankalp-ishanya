@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import HRDashboard from "./pages/HRDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
+import ParentDetailsPage from "./pages/ParentDetailsPage";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -63,6 +64,13 @@ const App = () => {
             <Route path="/parent" element={
               <ProtectedRoute allowedRoles={['parent']}>
                 <ParentDashboard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Parent Details Page - only for parents */}
+            <Route path="/parent/details" element={
+              <ProtectedRoute allowedRoles={['parent']}>
+                <ParentDetailsPage />
               </ProtectedRoute>
             } />
             
