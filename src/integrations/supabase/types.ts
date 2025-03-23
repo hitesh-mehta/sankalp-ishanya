@@ -648,6 +648,36 @@ export type Database = {
           },
         ]
       }
+      voice_sessions: {
+        Row: {
+          collected_data: Json | null
+          created_at: string | null
+          current_field: string | null
+          id: string
+          status: string | null
+          table_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          collected_data?: Json | null
+          created_at?: string | null
+          current_field?: string | null
+          id?: string
+          status?: string | null
+          table_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          collected_data?: Json | null
+          created_at?: string | null
+          current_field?: string | null
+          id?: string
+          status?: string | null
+          table_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       webdata: {
         Row: {
           created_at: string | null

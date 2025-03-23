@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Trash, Save, Search, Filter, X, ChevronRight, Eye, AlertCircle } from 'lucide-react';
+import { Edit, Trash, Save, Search, Filter, X, ChevronRight, Eye, AlertCircle, Mic } from 'lucide-react';
 import { toast } from 'sonner';
+import VoiceInputDialog from '@/components/ui/VoiceInputDialog';
 import {
   Table,
   TableBody,
@@ -42,20 +43,19 @@ const TableView = ({ table }: TableViewProps) => {
   const [isDetailedViewOpen, setIsDetailedViewOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [displayColumns, setDisplayColumns] = useState<string[]>([]);
+  const [isVoiceInputDialogOpen, setIsVoiceInputDialogOpen] = useState(false);
 
   const loadTableData = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Fetch all possible columns for this table first
       console.log(`Fetching columns for table ${table.name}`);
       const tableColumns = await fetchTableColumns(table.name);
       if (tableColumns) {
         console.log(`Columns for ${table.name}:`, tableColumns);
-        setAllColumns(tableColumns); // Keep all columns for data operations
+        setAllColumns(tableColumns);
         
-        // For students table, limit displayed columns
         if (table.name === 'students') {
           const limitedColumns = tableColumns.filter(col => 
             ['student_id', 'first_name', 'last_name', 'photo', 'dob', 'contact_number', 'student_email'].includes(col)
@@ -70,7 +70,6 @@ const TableView = ({ table }: TableViewProps) => {
         console.error(`No columns returned for ${table.name}`);
       }
       
-      // Fetch data with center_id filter if available
       console.log(`Fetching data from ${table.name} with center_id: ${table.center_id}`);
       const result = await fetchTableData(table.name, table.center_id);
       if (result) {
@@ -94,7 +93,6 @@ const TableView = ({ table }: TableViewProps) => {
     
     console.log(`Setting up real-time subscription for ${table.name}`);
     
-    // Subscribe to changes in the table
     const channel = supabase
       .channel(`${table.name}-changes`)
       .on('postgres_changes', { 
@@ -104,12 +102,10 @@ const TableView = ({ table }: TableViewProps) => {
       }, (payload) => {
         console.log('Change received:', payload);
         
-        // Reload data after any change
         loadTableData();
       })
       .subscribe();
     
-    // Clean up subscription when component unmounts or table changes
     return () => {
       console.log(`Cleaning up subscription for ${table.name}`);
       supabase.removeChannel(channel);
@@ -123,11 +119,10 @@ const TableView = ({ table }: TableViewProps) => {
   useEffect(() => {
     let result = [...data];
     
-    // Apply search
     if (searchTerm) {
       result = result.filter(row => 
         Object.entries(row).some(([key, value]) => 
-          key !== 'id' && // Exclude UUID from search
+          key !== 'id' && 
           value !== null && 
           String(value)
             .toLowerCase()
@@ -136,7 +131,6 @@ const TableView = ({ table }: TableViewProps) => {
       );
     }
     
-    // Apply filters
     Object.entries(filterValues).forEach(([column, value]) => {
       if (value) {
         result = result.filter(row => 
@@ -163,7 +157,6 @@ const TableView = ({ table }: TableViewProps) => {
     try {
       console.log(`Saving changes to row in ${table.name}:`, detailedViewRow);
       
-      // Ensure created_at is present and valid
       if (!detailedViewRow.created_at || detailedViewRow.created_at === '') {
         detailedViewRow.created_at = new Date().toISOString();
       }
@@ -210,14 +203,12 @@ const TableView = ({ table }: TableViewProps) => {
   };
 
   const handleEditChange = (column: string, value: string) => {
-    // Update the current data in real-time
     const updatedEditingRow = {
       ...editingRow,
       [column]: value,
     };
     setEditingRow(updatedEditingRow);
     
-    // Update the filtered data in real-time to see changes immediately
     const newFilteredData = filteredData.map(row => 
       row.id === editingRow.id ? {...row, [column]: value} : row
     );
@@ -234,7 +225,6 @@ const TableView = ({ table }: TableViewProps) => {
     if (!editingRow) return;
     
     try {
-      // Ensure created_at is present and valid
       if (!editingRow.created_at || editingRow.created_at === '') {
         editingRow.created_at = new Date().toISOString();
       }
@@ -315,6 +305,40 @@ const TableView = ({ table }: TableViewProps) => {
     }
   };
 
+  const handleOpenVoiceInputDialog = () => {
+    setIsVoiceInputDialogOpen(true);
+  };
+
+  const handleVoiceInputComplete = async (data: Record<string, any>) => {
+    try {
+      console.log(`Inserting row into ${table.name} from voice input:`, data);
+      
+      if (table.center_id && !data.center_id) {
+        data.center_id = table.center_id;
+      }
+      
+      if (table.program_id && !data.program_id) {
+        data.program_id = table.program_id;
+      }
+      
+      if (!data.created_at) {
+        data.created_at = new Date().toISOString();
+      }
+      
+      const result = await insertRow(table.name, data);
+      if (result.success) {
+        toast.success('Record added successfully via voice input');
+        setIsVoiceInputDialogOpen(false);
+      } else if (result.errors) {
+        console.error('Insert errors from voice input:', result.errors);
+        toast.error('Failed to add record. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error in handleVoiceInputComplete:', err);
+      toast.error('An error occurred while adding the record');
+    }
+  };
+
   const clearFilters = () => {
     setFilterValues({});
     setSearchTerm('');
@@ -335,7 +359,6 @@ const TableView = ({ table }: TableViewProps) => {
            column === 'address';
   };
 
-  // Get placeholder examples based on field name
   const getPlaceholder = (column: string): string => {
     const placeholders: Record<string, string> = {
       first_name: "Enter first name (e.g., John)",
@@ -367,8 +390,7 @@ const TableView = ({ table }: TableViewProps) => {
     
     return placeholders[column] || `Enter ${column}`;
   };
-  
-  // Determine if a field is required
+
   const isFieldRequired = (column: string): boolean => {
     const requiredFields = [
       'first_name', 'last_name', 'name', 'center_id', 'program_id', 
@@ -394,11 +416,22 @@ const TableView = ({ table }: TableViewProps) => {
 
   return (
     <div className="animate-fade-in">
-      <TableActions 
-        tableName={table.name} 
-        onInsert={handleInsertClick}
-        onRefresh={loadTableData}
-      />
+      <div className="flex justify-between items-center mb-4">
+        <TableActions 
+          tableName={table.name} 
+          onInsert={handleInsertClick}
+          onRefresh={loadTableData}
+        />
+        
+        <Button 
+          onClick={handleOpenVoiceInputDialog}
+          variant="outline"
+          className="border-ishanya-green text-ishanya-green hover:bg-ishanya-green/10"
+        >
+          <Mic className="mr-2 h-4 w-4" />
+          Add with Voice
+        </Button>
+      </div>
       
       <div className="mb-6 space-y-4">
         <div className="flex items-center gap-2">
@@ -734,6 +767,13 @@ const TableView = ({ table }: TableViewProps) => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      <VoiceInputDialog 
+        isOpen={isVoiceInputDialogOpen}
+        onClose={() => setIsVoiceInputDialogOpen(false)}
+        table={table.name}
+        onComplete={handleVoiceInputComplete}
+      />
     </div>
   );
 };
