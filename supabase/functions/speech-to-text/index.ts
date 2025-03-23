@@ -47,8 +47,8 @@ serve(async (req) => {
     console.log("Calling Gemini API with prompt:", prompt);
     console.log("API Key available:", GEMINI_API_KEY ? "Yes" : "No");
 
-    // Call the Gemini API for speech-to-text conversion
-    const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY, {
+    // Call the Gemini API for speech-to-text conversion with the correct model name
+    const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=" + GEMINI_API_KEY, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

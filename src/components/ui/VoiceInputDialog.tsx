@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,6 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-// Define the field metadata for various tables
 export type FieldMetadata = {
   name: string;
   label: string;
@@ -23,7 +21,6 @@ export type TableConfig = {
   fields: FieldMetadata[];
 };
 
-// Define student table fields
 const studentFields: FieldMetadata[] = [
   { name: 'first_name', label: 'First Name', description: 'Student\'s first name', required: true, type: 'text' },
   { name: 'last_name', label: 'Last Name', description: 'Student\'s last name', required: true, type: 'text' },
@@ -43,7 +40,6 @@ const studentFields: FieldMetadata[] = [
   { name: 'enrollment_year', label: 'Enrollment Year', description: 'Year of enrollment (e.g., 2023)', required: true, type: 'number' },
 ];
 
-// Define educator table fields
 const educatorFields: FieldMetadata[] = [
   { name: 'name', label: 'Full Name', description: 'Educator\'s full name', required: true, type: 'text' },
   { name: 'center_id', label: 'Center ID', description: 'Numeric ID of the center', required: true, type: 'number' },
@@ -56,7 +52,6 @@ const educatorFields: FieldMetadata[] = [
   { name: 'date_of_joining', label: 'Date of Joining', description: 'Format: YYYY-MM-DD', required: true, type: 'date' },
 ];
 
-// Define employee table fields
 const employeeFields: FieldMetadata[] = [
   { name: 'name', label: 'Full Name', description: 'Employee\'s full name', required: true, type: 'text' },
   { name: 'center_id', label: 'Center ID', description: 'Numeric ID of the center', required: true, type: 'number' },
@@ -69,7 +64,6 @@ const employeeFields: FieldMetadata[] = [
   { name: 'date_of_joining', label: 'Date of Joining', description: 'Format: YYYY-MM-DD', required: true, type: 'date' },
 ];
 
-// Define table configurations
 export const tableConfigs: Record<string, TableConfig> = {
   students: {
     tableName: 'students',
@@ -113,7 +107,6 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
 
   useEffect(() => {
     if (isOpen) {
-      // Reset state when dialog opens
       setCurrentStep(0);
       setCollectedData({});
       setConversationHistory([]);
@@ -123,12 +116,10 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
 
   useEffect(() => {
     if (isOpen && currentStep === 0) {
-      // Start with a welcome message
       const welcomeMessage = `Hi there! I'll help you add a new ${tableConfig.displayName}. I'll ask you for each piece of information one by one. You can speak your answers after clicking the microphone button. If you don't have some information, just say "I don't know" or "skip" and we'll mark it as empty. Let's start!`;
       setBotMessage(welcomeMessage);
       setConversationHistory(prev => [...prev, {type: 'bot', message: welcomeMessage}]);
       
-      // Proceed to first question
       setTimeout(() => {
         askForField(0);
       }, 1000);
@@ -137,7 +128,6 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
 
   const initializeSession = async () => {
     try {
-      // Create a new voice session
       const { data, error } = await supabase
         .from('voice_sessions')
         .insert({
@@ -160,7 +150,6 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
 
   const askForField = (index: number) => {
     if (index >= tableConfig.fields.length) {
-      // All fields have been collected
       finishCollection();
       return;
     }
@@ -247,55 +236,44 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
           let transcript = response.data.text.trim();
           setCurrentTranscript(transcript);
           
-          // Add user's response to conversation
           setConversationHistory(prev => [...prev, {type: 'user', message: transcript}]);
           
-          // Process special value
           if (transcript === 'NULL_VALUE' || 
               transcript.toLowerCase().includes('i don\'t know') || 
               transcript.toLowerCase().includes('i don\'t have') ||
               transcript.toLowerCase().includes('skip')) {
             transcript = '';
-            // Acknowledge the skip
             const skipMessage = `That's fine, we'll leave ${currentField.label} empty.`;
             setBotMessage(skipMessage);
             setConversationHistory(prev => [...prev, {type: 'bot', message: skipMessage}]);
           } else {
-            // Process the response based on field type
             if (currentField.type === 'number') {
-              // Extract just the number from the response
               const numberMatch = transcript.match(/\d+/);
               if (numberMatch) {
                 transcript = numberMatch[0];
               }
             } else if (currentField.type === 'date') {
-              // Try to extract a date in YYYY-MM-DD format
               const dateMatch = transcript.match(/\d{4}-\d{2}-\d{2}/);
               if (!dateMatch) {
-                // Try to parse a spoken date into the correct format
                 if (transcript.includes('/')) {
                   const parts = transcript.split('/');
                   if (parts.length === 3) {
-                    // Assuming MM/DD/YYYY format
                     transcript = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
                   }
                 }
               }
             }
             
-            // Confirm the captured value
             const confirmMessage = `Got it! ${currentField.label}: ${transcript}`;
             setBotMessage(confirmMessage);
             setConversationHistory(prev => [...prev, {type: 'bot', message: confirmMessage}]);
           }
           
-          // Save the value to collected data
           setCollectedData(prev => ({
             ...prev,
             [currentField.name]: transcript
           }));
           
-          // Update the session data
           if (currentSessionId) {
             await supabase
               .from('voice_sessions')
@@ -306,16 +284,13 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
               .eq('id', currentSessionId);
           }
           
-          // Move to the next field after a short delay
           setTimeout(() => {
             askForField(currentStep);
           }, 1500);
-          
         } catch (error) {
           console.error('Error processing speech:', error);
           toast.error('Failed to process speech. Please try again.');
           
-          // Add error to conversation
           const errorMessage = 'Sorry, I couldn\'t understand that. Can you try again?';
           setBotMessage(errorMessage);
           setConversationHistory(prev => [...prev, {type: 'bot', message: errorMessage}]);
@@ -333,7 +308,6 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
 
   const finishCollection = async () => {
     try {
-      // Update the session status
       if (currentSessionId) {
         await supabase
           .from('voice_sessions')
@@ -344,12 +318,10 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
           .eq('id', currentSessionId);
       }
       
-      // Show completion message
       const completionMessage = `Great! We've collected all the information for the ${tableConfig.displayName}. Let me submit this for you.`;
       setBotMessage(completionMessage);
       setConversationHistory(prev => [...prev, {type: 'bot', message: completionMessage}]);
       
-      // Convert data types as needed
       const processedData = Object.entries(collectedData).reduce((acc, [key, value]) => {
         const fieldDef = tableConfig.fields.find(f => f.name === key);
         
@@ -366,7 +338,6 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
         return acc;
       }, {} as Record<string, any>);
       
-      // Process numeric IDs
       if (processedData.center_id) {
         processedData.center_id = parseInt(processedData.center_id as string, 10);
       }
@@ -374,25 +345,29 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
         processedData.program_id = parseInt(processedData.program_id as string, 10);
       }
       
-      // Add created_at if needed
       if (!processedData.created_at) {
         processedData.created_at = new Date().toISOString();
       }
       
-      // Call the onComplete callback after a brief delay
       setTimeout(() => {
         onComplete(processedData);
         
-        // Close the dialog after a brief delay
         setTimeout(() => {
           onClose();
         }, 1000);
       }, 2000);
-      
     } catch (error) {
       console.error('Error finalizing voice session:', error);
       toast.error('Failed to complete the entry process');
     }
+  };
+
+  const isCurrentFieldRequired = () => {
+    if (currentStep > 0 && currentStep <= tableConfig.fields.length) {
+      const currentField = tableConfig.fields[currentStep - 1];
+      return currentField.required;
+    }
+    return false;
   };
 
   return (
@@ -496,11 +471,12 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
             <Button 
               variant="ghost" 
               onClick={() => askForField(currentStep)}
-              disabled={processing}
-              className="text-ishanya-green border-ishanya-green/20"
+              disabled={processing || isCurrentFieldRequired()}
+              className={`text-ishanya-green border-ishanya-green/20 ${isCurrentFieldRequired() ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <ChevronRight className="mr-2 h-4 w-4" />
               Skip to Next
+              {isCurrentFieldRequired() && <span className="text-xs ml-1">(Required)</span>}
             </Button>
           )}
         </div>
