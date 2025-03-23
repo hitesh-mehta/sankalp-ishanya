@@ -236,6 +236,7 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
           let transcript = response.data.text.trim();
           setCurrentTranscript(transcript);
           
+          // Add the transcript to conversation history only once
           setConversationHistory(prev => [...prev, {type: 'user', message: transcript}]);
           
           if (transcript === 'NULL_VALUE' || 
@@ -322,12 +323,23 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
       setBotMessage(completionMessage);
       setConversationHistory(prev => [...prev, {type: 'bot', message: completionMessage}]);
       
+      // Clean and validate data before submission
       const processedData = Object.entries(collectedData).reduce((acc, [key, value]) => {
         const fieldDef = tableConfig.fields.find(f => f.name === key);
         
         if (fieldDef) {
           if (fieldDef.type === 'number' && value !== '') {
-            acc[key] = parseInt(value as string, 10);
+            try {
+              acc[key] = parseInt(value as string, 10);
+              if (isNaN(acc[key])) {
+                acc[key] = null;
+              }
+            } catch (e) {
+              acc[key] = null;
+            }
+          } else if (value === '') {
+            // Set empty strings to null for database compatibility
+            acc[key] = null;
           } else {
             acc[key] = value;
           }
@@ -338,16 +350,41 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
         return acc;
       }, {} as Record<string, any>);
       
+      // Convert specific fields to numbers
       if (processedData.center_id) {
-        processedData.center_id = parseInt(processedData.center_id as string, 10);
-      }
-      if (processedData.program_id) {
-        processedData.program_id = parseInt(processedData.program_id as string, 10);
+        try {
+          const centerId = parseInt(processedData.center_id as string, 10);
+          processedData.center_id = isNaN(centerId) ? null : centerId;
+        } catch (e) {
+          processedData.center_id = null;
+        }
       }
       
+      if (processedData.program_id) {
+        try {
+          const programId = parseInt(processedData.program_id as string, 10);
+          processedData.program_id = isNaN(programId) ? null : programId;
+        } catch (e) {
+          processedData.program_id = null;
+        }
+      }
+
+      // Add created_at if missing
       if (!processedData.created_at) {
         processedData.created_at = new Date().toISOString();
       }
+      
+      // Add any missing required fields for the specific table type
+      if (tableConfig.tableName === 'students' && !processedData.student_id) {
+        processedData.student_id = `STU${Date.now().toString().slice(-6)}`;
+      }
+      
+      // Special handling for specific tables
+      if (tableConfig.tableName === 'educators' && !processedData.program_id) {
+        processedData.program_id = 1; // Default program ID if missing
+      }
+      
+      console.log('Final processed data:', processedData);
       
       setTimeout(() => {
         onComplete(processedData);
@@ -407,14 +444,6 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
             </div>
           ))}
           
-          {botMessage && currentStep > conversationHistory.length && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-lg px-4 py-2 bg-ishanya-green text-white">
-                {botMessage}
-              </div>
-            </div>
-          )}
-          
           {isRecording && (
             <div className="flex justify-center items-center py-4">
               <div className="animate-pulse text-red-500">Recording...</div>
@@ -425,14 +454,6 @@ const VoiceInputDialog = ({ isOpen, onClose, table, onComplete }: VoiceInputDial
             <div className="flex justify-center items-center py-4">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
               <span>Processing your speech...</span>
-            </div>
-          )}
-          
-          {currentTranscript && recordingComplete && !processing && (
-            <div className="flex justify-end">
-              <div className="max-w-[80%] rounded-lg px-4 py-2 bg-gray-200 text-gray-800">
-                {currentTranscript}
-              </div>
             </div>
           )}
         </div>
