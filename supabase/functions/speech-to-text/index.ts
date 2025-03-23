@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
+// Get the API key from environment variables
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
 const corsHeaders = {
@@ -22,9 +23,12 @@ serve(async (req) => {
       throw new Error('No audio data provided');
     }
 
-    // Process the base64 audio data
-    // Note: We're directly using the base64 audio for Gemini's API
-    
+    // Check if API key is available
+    if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY is not set in environment variables");
+      throw new Error("API key not configured");
+    }
+
     // Create a prompt that helps Gemini understand the context
     let prompt = `You are a helpful assistant for data entry. `;
     
@@ -39,6 +43,9 @@ serve(async (req) => {
     } else {
       prompt += `Please transcribe this audio exactly as spoken.`;
     }
+
+    console.log("Calling Gemini API with prompt:", prompt);
+    console.log("API Key available:", GEMINI_API_KEY ? "Yes" : "No");
 
     // Call the Gemini API for speech-to-text conversion
     const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY, {
@@ -75,6 +82,8 @@ serve(async (req) => {
     }
 
     const result = await response.json();
+    console.log("Gemini API response:", JSON.stringify(result));
+    
     let transcribedText = "";
     
     // Extract the text from the Gemini response
@@ -93,6 +102,8 @@ serve(async (req) => {
         transcribedText.toLowerCase().includes("not available")) {
       transcribedText = "NULL_VALUE";
     }
+
+    console.log("Transcribed text:", transcribedText);
 
     return new Response(
       JSON.stringify({ 
