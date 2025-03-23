@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
@@ -67,23 +66,31 @@ const ParentDetailsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+  const initialized = useRef(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
   const user = getCurrentUser();
 
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    
+    let isMounted = true;
+    
     const fetchData = async () => {
       if (!user || !user.email) {
-        setError("Not logged in");
-        setLoading(false);
+        if (isMounted) {
+          setError("Not logged in");
+          setLoading(false);
+        }
         return;
       }
       
       try {
+        if (!isMounted) return;
         setLoading(true);
         
-        // 1. Fetch parent record to get student_id
         const { data: parentData, error: parentError } = await supabase
           .from('parents')
           .select('student_id, feedback')
@@ -92,23 +99,25 @@ const ParentDetailsPage = () => {
           
         if (parentError) {
           console.error('Error fetching parent data:', parentError);
-          setError("Unable to fetch parent information. Please contact support.");
-          setLoading(false);
+          if (isMounted) {
+            setError("Unable to fetch parent information. Please contact support.");
+            setLoading(false);
+          }
           return;
         }
         
         if (!parentData || !parentData.student_id) {
-          setError("No student linked to this parent account. Please contact the administrator.");
-          setLoading(false);
+          if (isMounted) {
+            setError("No student linked to this parent account. Please contact the administrator.");
+            setLoading(false);
+          }
           return;
         }
 
-        // Pre-fill any existing feedback
-        if (parentData.feedback) {
+        if (parentData.feedback && isMounted) {
           setFeedback(parentData.feedback);
         }
         
-        // 2. Fetch student data using student_id
         const { data: student, error: studentError } = await supabase
           .from('students')
           .select('*, programs(name)')
@@ -117,20 +126,25 @@ const ParentDetailsPage = () => {
           
         if (studentError) {
           console.error('Error fetching student data:', studentError);
-          setError("Unable to fetch student information. Please contact support.");
-          setLoading(false);
+          if (isMounted) {
+            setError("Unable to fetch student information. Please contact support.");
+            setLoading(false);
+          }
           return;
         }
         
         if (!student) {
-          setError("No student record found for the linked student ID. Please contact the administrator.");
-          setLoading(false);
+          if (isMounted) {
+            setError("No student record found for the linked student ID. Please contact the administrator.");
+            setLoading(false);
+          }
           return;
         }
         
-        setStudentData(student);
+        if (isMounted) {
+          setStudentData(student);
+        }
         
-        // 3. If educator_employee_id exists, fetch educator data
         if (student.educator_employee_id) {
           const { data: educator, error: educatorError } = await supabase
             .from('educators')
@@ -140,21 +154,28 @@ const ParentDetailsPage = () => {
             
           if (educatorError) {
             console.error('Error fetching educator data:', educatorError);
-            // Don't set error for the whole page, just not show educator info
-          } else if (educator) {
+          } else if (educator && isMounted) {
             setEducatorData(educator);
           }
         }
       } catch (error) {
         console.error('Error fetching data:', error);
-        setError("An unexpected error occurred. Please try again later.");
+        if (isMounted) {
+          setError("An unexpected error occurred. Please try again later.");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
     fetchData();
-  }, [user]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleBack = () => {
     navigate('/parent');
@@ -227,13 +248,11 @@ const ParentDetailsPage = () => {
         format: 'a4',
       });
       
-      // Calculate dimensions to fit the content properly
-      const imgWidth = 210; // A4 width in mm
+      const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       
-      // Generate timestamp for filename
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const fileName = `student-report-${timestamp}.pdf`;
       
@@ -253,36 +272,31 @@ const ParentDetailsPage = () => {
     }
   };
 
-  // Format dates for display
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Format arrays for display
   const formatArray = (arr?: string[] | string) => {
     if (!arr) return 'N/A';
     if (typeof arr === 'string') {
       try {
-        // Try to parse if it's a JSON string
         const parsed = JSON.parse(arr);
         return Array.isArray(parsed) ? parsed.join(', ') : arr;
       } catch {
-        // If not parseable, return as is
         return arr;
       }
     }
     return Array.isArray(arr) ? arr.join(', ') : 'N/A';
   };
 
-  // Generate dummy progress data
   const progressData = [
     { date: '2023-12-01', activity: 'Reading Session', progress: 'Good', notes: 'Completed 3 pages' },
     { date: '2023-12-05', activity: 'Math Exercise', progress: 'Excellent', notes: 'Mastered addition' },
     { date: '2023-12-10', activity: 'Speech Therapy', progress: 'Improving', notes: 'Pronounced 5 new words' },
     { date: '2023-12-15', activity: 'Physical Activity', progress: 'Good', notes: 'Participated enthusiastically' },
   ];
-  
+
   return (
     <Layout
       title="Student Details"
@@ -313,7 +327,6 @@ const ParentDetailsPage = () => {
               <TabsTrigger value="progress">Progress & Contact</TabsTrigger>
             </TabsList>
             
-            {/* === PERSONAL INFO TAB === */}
             <TabsContent value="info" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="md:col-span-1">
@@ -414,7 +427,6 @@ const ParentDetailsPage = () => {
               </div>
             </TabsContent>
             
-            {/* === EDUCATION DETAILS TAB === */}
             <TabsContent value="education" className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
@@ -512,7 +524,6 @@ const ParentDetailsPage = () => {
               )}
             </TabsContent>
             
-            {/* === HEALTH & DEVELOPMENT TAB === */}
             <TabsContent value="health" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
@@ -574,7 +585,6 @@ const ParentDetailsPage = () => {
               </div>
             </TabsContent>
             
-            {/* === PROGRESS & CONTACT TAB === */}
             <TabsContent value="progress" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -655,7 +665,6 @@ const ParentDetailsPage = () => {
             </TabsContent>
           </Tabs>
           
-          {/* Hidden div for PDF generation */}
           <div className="hidden">
             <div ref={reportRef} className="p-8 bg-white" style={{ width: "210mm", minHeight: "297mm" }}>
               <div className="text-center mb-8">
@@ -771,3 +780,4 @@ const ParentDetailsPage = () => {
 };
 
 export default ParentDetailsPage;
+
