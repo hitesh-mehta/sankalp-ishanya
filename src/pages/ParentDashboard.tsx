@@ -23,15 +23,19 @@ const ParentDashboard = () => {
   };
   
   useEffect(() => {
+    let isMounted = true; // Add mounted flag to prevent state updates after unmount
+    
     const checkParentStatus = async () => {
       if (!user) {
-        setError("Not logged in");
-        setLoading(false);
+        if (isMounted) {
+          setError("Not logged in");
+          setLoading(false);
+        }
         return;
       }
       
       try {
-        setLoading(true);
+        if (!isMounted) return;
         
         // Check if parent exists and has a student_id
         const { data: parentData, error: parentError } = await supabase
@@ -42,33 +46,46 @@ const ParentDashboard = () => {
           
         if (parentError) {
           console.error('Error fetching parent data:', parentError);
-          setError("Unable to fetch parent information. Please contact support.");
-          setLoading(false);
+          if (isMounted) {
+            setError("Unable to fetch parent information. Please contact support.");
+            setLoading(false);
+          }
           return;
         }
         
         if (!parentData) {
-          setError("No parent record found. Please contact the administrator.");
-          setLoading(false);
+          if (isMounted) {
+            setError("No parent record found. Please contact the administrator.");
+            setLoading(false);
+          }
           return;
         }
 
         // If we have a parent record, we're good to go for the dashboard
-        toast({
-          title: "Welcome to your dashboard",
-          description: "View your child's details for more information",
-        });
+        if (isMounted) {
+          toast({
+            title: "Welcome to your dashboard",
+            description: "View your child's details for more information",
+          });
+          setLoading(false); // Make sure to update loading state regardless of success
+        }
         
       } catch (error) {
         console.error('Error checking parent status:', error);
-        setError("An unexpected error occurred. Please try again later.");
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          setError("An unexpected error occurred. Please try again later.");
+          setLoading(false);
+        }
       }
     };
     
     checkParentStatus();
-  }, [user, toast]);
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [user]); // Remove toast from dependency array
   
   return (
     <Layout
