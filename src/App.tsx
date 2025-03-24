@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { isAuthenticated, getUserRole } from "./lib/auth";
+import EmployeeDetailPage from './pages/EmployeeDetailPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +77,16 @@ const App = () => {
                     <ParentDetailsPage />
                   </ProtectedRoute>
                 } />
+                
+                {/* HR Employees Detail Page - only for HR and administrators */}
+                <Route 
+                  path="/hr/employees/:employeeId" 
+                  element={
+                    <ProtectedRoute allowedRoles={['hr', 'administrator']}>
+                      <EmployeeDetailPage />
+                    </ProtectedRoute>
+                  } 
+                />
                 
                 {/* Not found routes */}
                 <Route path="*" element={<NotFound />} />

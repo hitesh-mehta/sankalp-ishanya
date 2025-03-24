@@ -187,6 +187,32 @@ export type Database = {
           },
         ]
       }
+      employee_payroll: {
+        Row: {
+          current_salary: number | null
+          employee_id: number
+          last_paid: string | null
+        }
+        Insert: {
+          current_salary?: number | null
+          employee_id: number
+          last_paid?: string | null
+        }
+        Update: {
+          current_salary?: number | null
+          employee_id?: number
+          last_paid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_payroll_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["employee_id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           blood_group: string | null
