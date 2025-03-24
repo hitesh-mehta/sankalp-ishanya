@@ -100,11 +100,14 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
               </PopoverTrigger>
               <PopoverContent
                 className="w-auto p-0 bg-white shadow-lg rounded-lg"
-                align="start"
                 side="bottom"
+                align="center"
                 sideOffset={5}
                 avoidCollisions={true}
-                style={{ maxHeight: "250px", overflowY: "auto" }}
+                style={{
+                  maxHeight: "min(300px, 50vh)", // Ensures the date picker does not exceed half of the viewport height
+                  overflowY: "auto",
+                }}
               >
                 <Calendar mode="single" selected={lastPaidDate} onSelect={(date) => date && setLastPaidDate(date)} initialFocus />
               </PopoverContent>
