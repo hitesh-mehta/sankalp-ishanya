@@ -260,7 +260,7 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
                     const status = isDatePresentOrAbsent(props.date);
                     return (
                       <div className="relative flex h-8 w-8 items-center justify-center">
-                        {props.day}
+                        {props.children}
                         {status === 'present' && (
                           <div className="absolute bottom-1 h-1 w-1 rounded-full bg-green-500"></div>
                         )}
@@ -283,6 +283,7 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
                 </div>
               </div>
             </div>
+            
             <div className="flex-1">
               <h3 className="text-lg font-medium mb-4">Monthly Attendance</h3>
               
