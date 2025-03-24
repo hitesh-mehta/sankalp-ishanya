@@ -87,7 +87,6 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                 value={salary}
                 onChange={(e) => setSalary(Number(e.target.value))}
                 min="0"
-                // Removed step="1000" to allow any salary value
                 placeholder="Enter employee salary"
                 className="pl-10 text-lg"
                 required
@@ -124,7 +123,6 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                   month={calendarMonth}
                   onMonthChange={setCalendarMonth}
                   className="p-3 pointer-events-auto rounded-md border shadow-lg"
-                  // Allow month navigation
                   captionLayout="dropdown-buttons"
                   fromYear={2000}
                   toYear={2030}
