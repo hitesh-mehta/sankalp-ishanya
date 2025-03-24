@@ -42,12 +42,10 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
       };
 
       if (existingData?.id) {
-        // Update existing record
         const { error } = await supabase.from("employee_payroll").update(payrollData).eq("id", existingData.id);
         if (error) throw error;
         toast.success("Payroll updated successfully");
       } else {
-        // Insert new record
         const { error } = await supabase.from("employee_payroll").insert([payrollData]);
         if (error) throw error;
         toast.success("Payroll information added successfully");
@@ -100,7 +98,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                   {lastPaidDate ? <span className="text-base">{format(lastPaidDate, "PPP")}</span> : <span className="text-base">Select payment date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white" align="start" side="bottom">
+              <PopoverContent className="w-auto p-0 bg-white" align="center" side="bottom" sideOffset={10}>
                 <Calendar mode="single" selected={lastPaidDate} onSelect={(date) => date && setLastPaidDate(date)} initialFocus />
               </PopoverContent>
             </Popover>
