@@ -366,6 +366,38 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          announcement_id: number | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          user_id: string
+        }
+        Insert: {
+          announcement_id?: number | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          user_id: string
+        }
+        Update: {
+          announcement_id?: number | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["announcement_id"]
+          },
+        ]
+      }
       parents: {
         Row: {
           email: string

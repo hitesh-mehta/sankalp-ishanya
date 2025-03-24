@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, IndianRupee } from "lucide-react";
+import { CalendarIcon, IndianRupee, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,11 +31,26 @@ type PayrollFormProps = {
   onCancel: () => void;
 };
 
-// Type for month selection
+// Define months array with proper typing
 type Month = {
   value: number;
   label: string;
 };
+
+const months: Month[] = [
+  { value: 0, label: "January" },
+  { value: 1, label: "February" },
+  { value: 2, label: "March" },
+  { value: 3, label: "April" },
+  { value: 4, label: "May" },
+  { value: 5, label: "June" },
+  { value: 6, label: "July" },
+  { value: 7, label: "August" },
+  { value: 8, label: "September" },
+  { value: 9, label: "October" },
+  { value: 10, label: "November" },
+  { value: 11, label: "December" },
+];
 
 const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollFormProps) => {
   const [salary, setSalary] = useState<number>(existingData?.current_salary || 0);
@@ -44,30 +59,14 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Fix the calendar month state by explicitly declaring its type
+  // Fix the calendar month state with explicit typing
   const [calendarMonth, setCalendarMonth] = useState<Date>(
     lastPaidDate || new Date()
   );
 
-  // Generate years for the year dropdown
+  // Generate years for the year dropdown (past 15 years to future 15 years)
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 31 }, (_, i) => currentYear - 15 + i);
-
-  // Define months array with proper typing
-  const months: Month[] = [
-    { value: 0, label: "January" },
-    { value: 1, label: "February" },
-    { value: 2, label: "March" },
-    { value: 3, label: "April" },
-    { value: 4, label: "May" },
-    { value: 5, label: "June" },
-    { value: 6, label: "July" },
-    { value: 7, label: "August" },
-    { value: 8, label: "September" },
-    { value: 9, label: "October" },
-    { value: 10, label: "November" },
-    { value: 11, label: "December" },
-  ];
 
   const handleYearChange = (year: string) => {
     const newDate = new Date(calendarMonth);
@@ -78,6 +77,16 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
   const handleMonthChange = (month: string) => {
     const newDate = new Date(calendarMonth);
     newDate.setMonth(parseInt(month));
+    setCalendarMonth(newDate);
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newDate = new Date(calendarMonth);
+    if (direction === 'prev') {
+      newDate.setMonth(newDate.getMonth() - 1);
+    } else {
+      newDate.setMonth(newDate.getMonth() + 1);
+    }
     setCalendarMonth(newDate);
   };
 
@@ -161,19 +170,28 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white" align="start">
+              <PopoverContent className="w-auto p-0 bg-white z-50" align="start">
                 <div className="p-3 space-y-3">
-                  {/* Month/year selector */}
-                  <div className="flex space-x-2">
-                    <div className="flex-1">
+                  {/* Improved Month/Year Navigation */}
+                  <div className="flex items-center justify-between mb-2">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => navigateMonth('prev')}
+                      className="h-8 w-8"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="flex space-x-2">
                       <Select
                         value={calendarMonth.getMonth().toString()}
                         onValueChange={handleMonthChange}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-8 w-[110px]">
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper">
+                        <SelectContent className="bg-white z-50" position="popper">
                           {months.map((month) => (
                             <SelectItem key={month.value} value={month.value.toString()}>
                               {month.label}
@@ -181,16 +199,15 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div className="flex-1">
+                      
                       <Select
                         value={calendarMonth.getFullYear().toString()}
                         onValueChange={handleYearChange}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-8 w-[80px]">
                           <SelectValue placeholder="Year" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper">
+                        <SelectContent className="bg-white z-50 max-h-[200px]" position="popper">
                           {years.map((year) => (
                             <SelectItem key={year} value={year.toString()}>
                               {year}
@@ -199,6 +216,15 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => navigateMonth('next')}
+                      className="h-8 w-8"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
                   
                   <Calendar
