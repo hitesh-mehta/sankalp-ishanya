@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableCaption, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Mail, Phone, User, Calendar, Book, GraduationCap, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
-import { useParams } from 'react-router-dom';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { format } from 'date-fns';
+import { Separator } from '@/components/ui/separator';
 
 type StudentDetailsProps = {
   studentId: number;
@@ -117,6 +115,12 @@ const StudentDetails = ({ studentId, onBack }: StudentDetailsProps) => {
       <Card>
         <CardHeader>
           <CardTitle>Student Details</CardTitle>
+          <CardDescription>
+            <Button onClick={onBack} variant="ghost" className="flex items-center">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
           <div className="flex flex-col md:flex-row gap-8">

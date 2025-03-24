@@ -5,7 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Calendar as CalendarIcon, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { AlertCircle, Calendar as CalendarIcon, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Accordion,
@@ -30,6 +30,7 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [presentDates, setPresentDates] = useState<Date[]>([]);
+  const [absentDates, setAbsentDates] = useState<Date[]>([]);
 
   // Get current year
   const currentYear = new Date().getFullYear();
@@ -66,7 +67,7 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
         
         setAttendanceRecords(data as AttendanceRecord[] || []);
         
-        // Create array of dates where employee was present
+        // Create arrays of dates where employee was present or absent
         const presentDatesArray = (data as AttendanceRecord[])
           .filter(record => record.attendance === true)
           .map(record => {
@@ -75,7 +76,16 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
           })
           .filter((date): date is Date => date !== null);
         
+        const absentDatesArray = (data as AttendanceRecord[])
+          .filter(record => record.attendance === false)
+          .map(record => {
+            const parsedDate = parse(record.date, 'yyyy-MM-dd', new Date());
+            return isValid(parsedDate) ? parsedDate : null;
+          })
+          .filter((date): date is Date => date !== null);
+        
         setPresentDates(presentDatesArray);
+        setAbsentDates(absentDatesArray);
       } catch (error) {
         console.error('Error in fetchAttendance:', error);
         setError('An unexpected error occurred');
@@ -145,12 +155,24 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
                   getYear(date) !== currentYear || 
                   date > new Date()
                 }
-                // Removed the readOnly prop that's causing the error
+                modifiers={{
+                  absent: absentDates
+                }}
+                modifiersStyles={{
+                  absent: {
+                    textDecoration: 'line-through',
+                    color: 'red'
+                  }
+                }}
               />
-              <div className="mt-4 flex items-center justify-center gap-2">
+              <div className="mt-4 flex items-center justify-center gap-4">
                 <div className="flex items-center gap-1">
-                  <div className="h-3 w-3 rounded-full bg-primary"></div>
+                  <Check className="h-4 w-4 text-green-600" />
                   <span className="text-sm">Present</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <X className="h-4 w-4 text-red-600" />
+                  <span className="text-sm">Absent</span>
                 </div>
               </div>
             </div>
@@ -196,7 +218,10 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
                                     record.attendance ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
                                   }`}
                                 >
-                                  {record.attendance && <Check className="h-3 w-3" />}
+                                  {record.attendance ? 
+                                    <Check className="h-3 w-3" /> : 
+                                    <X className="h-3 w-3" />
+                                  }
                                   {format(new Date(record.date), 'd MMM')}
                                 </div>
                               ))

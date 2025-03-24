@@ -251,18 +251,22 @@ const TeacherReport = () => {
   );
 };
 
-export default TeacherReport;
-
 const getAttendanceStats = (records: any[]) => {
   const total = records.length;
   const present = records.filter(record => record.attendance === true).length;
   const absent = records.filter(record => record.attendance === false).length;
+  const late = 0;
+  const excused = 0;
   
   return {
     total,
     present,
     absent,
+    late,
+    excused,
     presentPercentage: total > 0 ? (present / total) * 100 : 0,
     absentPercentage: total > 0 ? (absent / total) * 100 : 0,
   };
 };
+
+export default TeacherReport;
