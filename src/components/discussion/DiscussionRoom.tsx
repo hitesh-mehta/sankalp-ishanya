@@ -32,6 +32,9 @@ const DiscussionRoom = () => {
   // Function to fetch latest messages
   const fetchMessages = async () => {
     try {
+      setLoading(true);
+      console.log('Fetching messages...');
+      
       const { data, error } = await supabase
         .from('discussion_messages')
         .select('*')
@@ -49,8 +52,11 @@ const DiscussionRoom = () => {
       }
       
       if (data) {
-        setMessages(data);
         console.log('Fetched messages:', data);
+        setMessages(data);
+      } else {
+        console.log('No messages found');
+        setMessages([]);
       }
     } catch (error) {
       console.error('Error in fetchMessages:', error);
@@ -76,52 +82,58 @@ const DiscussionRoom = () => {
         (payload) => {
           // Add new message to the list
           const newMsg = payload.new as Message;
-          console.log('New message received:', newMsg);
+          console.log('New message received via realtime:', newMsg);
           setMessages((prevMessages) => [...prevMessages, newMsg]);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
       
     // Cleanup subscription
     return () => {
+      console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
   }, []);
   
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+      console.log('Scrolling to bottom');
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
   
   // Send a new message
   const handleSendMessage = async () => {
-    if (!user || !newMessage.trim()) return;
+    if (!user || !newMessage.trim()) {
+      console.log('Cannot send message: User or message is empty', { user, message: newMessage });
+      return;
+    }
     
     try {
       setIsSending(true);
       
-      console.log('Sending message:', {
+      const messageData = {
         sender_id: user.id,
         sender_name: user.name,
         sender_role: user.role,
         message: newMessage.trim(),
-      });
+      };
+      
+      console.log('Sending message:', messageData);
       
       const { error, data } = await supabase
         .from('discussion_messages')
-        .insert({
-          sender_id: user.id,
-          sender_name: user.name,
-          sender_role: user.role,
-          message: newMessage.trim(),
-        })
+        .insert(messageData)
         .select();
         
       if (error) {
         console.error('Error sending message:', error);
         toast({
           title: 'Error',
-          description: 'Failed to send message. Please try again.',
+          description: `Failed to send message: ${error.message}`,
           variant: 'destructive',
         });
         return;
@@ -131,6 +143,10 @@ const DiscussionRoom = () => {
       
       // Clear input after successful send
       setNewMessage('');
+      
+      // Fetch messages again to ensure we have the latest
+      // This is a fallback in case the realtime subscription misses something
+      fetchMessages();
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
       toast({
@@ -269,7 +285,7 @@ const DiscussionRoom = () => {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             className="min-h-[60px] flex-grow"
-            disabled={isSending}
+            disabled={isSending || !user}
           />
           <Button
             onClick={handleSendMessage}
