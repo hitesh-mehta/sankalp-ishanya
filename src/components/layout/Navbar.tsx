@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, clearUserSession } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -13,16 +13,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LogOut, User } from 'lucide-react';
-import DyslexiaToggle from '@/components/ui/DyslexiaToggle';
+import { AccessibilityMenu } from '@/components/ui/AccessibilityMenu';
+import { useLanguage } from '@/components/ui/LanguageProvider';
+import { toast } from 'sonner';
 
 const Navbar = () => {
   const user = getCurrentUser();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useLanguage();
   
   // Handle logout
   const handleLogout = () => {
-    clearUserSession();
+    // Clear user from local storage
+    localStorage.removeItem('user');
+    toast.success(t("login.logout_success") || "Logged out successfully");
     navigate('/login');
   };
   
@@ -71,8 +76,8 @@ const Navbar = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Dyslexia Toggle */}
-            <DyslexiaToggle />
+            {/* Accessibility Menu */}
+            <AccessibilityMenu />
             
             {/* User menu dropdown */}
             <DropdownMenu>

@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Lock, Mail, Users } from 'lucide-react';
+import { AccessibilityMenu } from '@/components/ui/AccessibilityMenu';
+import { useLanguage } from '@/components/ui/LanguageProvider';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -28,6 +30,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -79,23 +82,28 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <img 
-            src="/lovable-uploads/17953c8a-6715-4e58-af68-a3918c44fd33.png" 
-            alt="Ishanya Foundation" 
-            className="h-16 mx-auto"
-          />
-          <h2 className="text-2xl font-bold text-gray-800 mt-4">Ishanya Foundation</h2>
-          <p className="text-gray-500 mt-1">Journey to Inclusion</p>
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-center flex-1">
+            <img 
+              src="/lovable-uploads/17953c8a-6715-4e58-af68-a3918c44fd33.png" 
+              alt="Ishanya Foundation" 
+              className="h-16 mx-auto"
+            />
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-4">Ishanya Foundation</h2>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Journey to Inclusion</p>
+          </div>
+          <div className="ml-auto">
+            <AccessibilityMenu />
+          </div>
         </div>
         
-        <Card className="w-full shadow-lg border-t-4 border-ishanya-green">
+        <Card className="w-full shadow-lg border-t-4 border-ishanya-green dark:border-ishanya-green/70 dark:bg-gray-800">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-xl text-center font-bold text-gray-800">Sign In</CardTitle>
-            <CardDescription className="text-center">
-              Enter your credentials to access the dashboard
+            <CardTitle className="text-xl text-center font-bold text-gray-800 dark:text-gray-100">{t('login.title')}</CardTitle>
+            <CardDescription className="text-center dark:text-gray-300">
+              {t('login.description')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -106,11 +114,11 @@ const Login = () => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="dark:text-gray-200">{t('login.email')}</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input placeholder="email@example.com" className="pl-10" {...field} />
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                          <Input placeholder="email@example.com" className="pl-10 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" {...field} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -122,11 +130,11 @@ const Login = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="dark:text-gray-200">{t('login.password')}</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <Input type="password" placeholder="******" showPasswordToggle className="pl-10" {...field} />
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                          <Input type="password" placeholder="******" className="pl-10 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" {...field} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -138,23 +146,23 @@ const Login = () => {
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <FormLabel className="dark:text-gray-200">{t('login.role')}</FormLabel>
                       <div className="relative">
-                        <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+                        <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 z-10" />
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="pl-10">
+                            <SelectTrigger className="pl-10 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
                               <SelectValue placeholder="Select your role" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="administrator">Administrator</SelectItem>
-                            <SelectItem value="hr">HR</SelectItem>
-                            <SelectItem value="teacher">Teacher</SelectItem>
-                            <SelectItem value="parent">Parent</SelectItem>
+                          <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                            <SelectItem value="administrator" className="dark:text-gray-100">Administrator</SelectItem>
+                            <SelectItem value="hr" className="dark:text-gray-100">HR</SelectItem>
+                            <SelectItem value="teacher" className="dark:text-gray-100">Teacher</SelectItem>
+                            <SelectItem value="parent" className="dark:text-gray-100">Parent</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -164,23 +172,23 @@ const Login = () => {
                 />
                 <Button 
                   type="submit" 
-                  className="w-full bg-ishanya-green hover:bg-ishanya-green/90 text-white" 
+                  className="w-full bg-ishanya-green hover:bg-ishanya-green/90 text-white dark:bg-ishanya-green/80 dark:hover:bg-ishanya-green" 
                   disabled={isLoading}
                 >
-                  {isLoading ? <LoadingSpinner size="sm" /> : "Sign In"}
+                  {isLoading ? <LoadingSpinner size="sm" /> : t('login.button')}
                 </Button>
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-gray-500">
-              Contact administrator if you need access
+          <CardFooter className="flex justify-center dark:text-gray-300">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t('login.contact')}
             </p>
           </CardFooter>
         </Card>
         
         <div className="text-center mt-6">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             © 2025 Ishanya Foundation. All rights reserved.
           </p>
         </div>

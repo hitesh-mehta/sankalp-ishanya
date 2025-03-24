@@ -1,9 +1,10 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "@/components/ui/ThemeProvider";
+import { LanguageProvider } from "@/components/ui/LanguageProvider";
 import Index from "./pages/Index";
 import HRDashboard from "./pages/HRDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
@@ -29,56 +30,60 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner position="top-right" />
-        <BrowserRouter>
-          <Routes>
-            {/* Public route */}
-            <Route path="/login" element={
-              isLoggedIn ? <Navigate to={getDefaultRoute(userRole)} /> : <Login />
-            } />
-            
-            {/* Admin/default dashboard - only for administrators */}
-            <Route path="/" element={
-              <ProtectedRoute allowedRoles={['administrator']}>
-                <Index />
-              </ProtectedRoute>
-            } />
-            
-            {/* HR Dashboard - only for HR */}
-            <Route path="/hr" element={
-              <ProtectedRoute allowedRoles={['hr']}>
-                <HRDashboard />
-              </ProtectedRoute>
-            } />
-            
-            {/* Teacher Dashboard - only for teachers */}
-            <Route path="/teacher" element={
-              <ProtectedRoute allowedRoles={['teacher']}>
-                <TeacherDashboard />
-              </ProtectedRoute>
-            } />
-            
-            {/* Parent Dashboard - only for parents */}
-            <Route path="/parent" element={
-              <ProtectedRoute allowedRoles={['parent']}>
-                <ParentDashboard />
-              </ProtectedRoute>
-            } />
-            
-            {/* Parent Details Page - only for parents */}
-            <Route path="/parent/details" element={
-              <ProtectedRoute allowedRoles={['parent']}>
-                <ParentDetailsPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Not found routes */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="light">
+        <LanguageProvider defaultLanguage="english">
+          <TooltipProvider>
+            <Toaster />
+            <Sonner position="top-right" className="dark:bg-gray-800 dark:text-white" />
+            <BrowserRouter>
+              <Routes>
+                {/* Public route */}
+                <Route path="/login" element={
+                  isLoggedIn ? <Navigate to={getDefaultRoute(userRole)} /> : <Login />
+                } />
+                
+                {/* Admin/default dashboard - only for administrators */}
+                <Route path="/" element={
+                  <ProtectedRoute allowedRoles={['administrator']}>
+                    <Index />
+                  </ProtectedRoute>
+                } />
+                
+                {/* HR Dashboard - only for HR */}
+                <Route path="/hr" element={
+                  <ProtectedRoute allowedRoles={['hr']}>
+                    <HRDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Teacher Dashboard - only for teachers */}
+                <Route path="/teacher" element={
+                  <ProtectedRoute allowedRoles={['teacher']}>
+                    <TeacherDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Parent Dashboard - only for parents */}
+                <Route path="/parent" element={
+                  <ProtectedRoute allowedRoles={['parent']}>
+                    <ParentDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Parent Details Page - only for parents */}
+                <Route path="/parent/details" element={
+                  <ProtectedRoute allowedRoles={['parent']}>
+                    <ParentDetailsPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Not found routes */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
