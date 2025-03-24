@@ -37,6 +37,13 @@ const EmployeeList = ({ employees }: EmployeeListProps) => {
     }
   };
 
+  const handleViewDetails = (employeeId: number, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    navigate(`/hr/employees/${employeeId}`);
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Employee Directory</h2>
@@ -52,7 +59,7 @@ const EmployeeList = ({ employees }: EmployeeListProps) => {
             <Card 
               key={employee.id} 
               className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate(`/hr/employees/${employee.employee_id}`)}
+              onClick={() => handleViewDetails(employee.employee_id)}
             >
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
@@ -78,6 +85,10 @@ const EmployeeList = ({ employees }: EmployeeListProps) => {
                     <span>{employee.gender}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Department:</span>
+                    <span>{employee.department}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
                     <span className="text-muted-foreground">Employee ID:</span>
                     <span>{employee.employee_id}</span>
                   </div>
@@ -85,10 +96,7 @@ const EmployeeList = ({ employees }: EmployeeListProps) => {
                     variant="outline" 
                     size="sm" 
                     className="w-full mt-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/hr/employees/${employee.employee_id}`);
-                    }}
+                    onClick={(e) => handleViewDetails(employee.employee_id, e)}
                   >
                     View Details
                   </Button>

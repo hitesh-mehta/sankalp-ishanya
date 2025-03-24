@@ -12,7 +12,7 @@ import EmployeeAttendance from '@/components/hr/EmployeeAttendance';
 import EmployeePayroll from '@/components/hr/EmployeePayroll';
 
 const EmployeeDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { employeeId } = useParams<{ employeeId: string }>();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ const EmployeeDetailPage = () => {
   
   useEffect(() => {
     const fetchEmployeeDetails = async () => {
-      if (!id) {
+      if (!employeeId) {
         setError('Employee ID is missing');
         setLoading(false);
         return;
@@ -31,12 +31,12 @@ const EmployeeDetailPage = () => {
         setLoading(true);
         setError(null);
         
-        console.log('Fetching employee with ID:', id);
+        console.log('Fetching employee with ID:', employeeId);
         
         const { data, error: fetchError } = await supabase
           .from('employees')
           .select('*')
-          .eq('employee_id', parseInt(id))
+          .eq('employee_id', parseInt(employeeId))
           .single();
           
         if (fetchError) {
@@ -56,7 +56,7 @@ const EmployeeDetailPage = () => {
     };
     
     fetchEmployeeDetails();
-  }, [id]);
+  }, [employeeId]);
   
   const handleBack = () => {
     navigate(-1);
@@ -208,17 +208,24 @@ const EmployeeDetailPage = () => {
             </div>
             
             <div>
-              <EmployeeAttendance employeeId={parseInt(id)} />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendance Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {employeeId && <EmployeeAttendance employeeId={parseInt(employeeId)} />}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </TabsContent>
         
         <TabsContent value="attendance">
-          <EmployeeAttendance employeeId={parseInt(id)} />
+          {employeeId && <EmployeeAttendance employeeId={parseInt(employeeId)} />}
         </TabsContent>
         
         <TabsContent value="payroll">
-          <EmployeePayroll employeeId={parseInt(id)} />
+          {employeeId && <EmployeePayroll employeeId={parseInt(employeeId)} />}
         </TabsContent>
       </Tabs>
     </Layout>

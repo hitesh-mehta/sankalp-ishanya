@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,29 +33,30 @@ const HRDashboard = () => {
   useEffect(() => {
     if (dataFetched.current || !user) return;
     
-    const fetchCentersData = async () => {
-      const centersData = await fetchCenters();
-      if (centersData) {
-        setCenters(centersData);
-      }
-    };
-
-    const fetchEmployees = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         dataFetched.current = true;
 
-        const { data: centersData, error: centersError } = await supabase
+        // Fetch centers
+        const centersData = await fetchCenters();
+        if (centersData) {
+          setCenters(centersData);
+        }
+
+        // Fetch total employee count
+        const { data: centersCountData, error: centersError } = await supabase
           .from('centers')
           .select('num_of_employees');
 
         if (centersError) {
           console.error('Error fetching centers:', centersError);
         } else {
-          const total = centersData.reduce((sum, center) => sum + (center.num_of_employees || 0), 0);
+          const total = centersCountData.reduce((sum, center) => sum + (center.num_of_employees || 0), 0);
           setTotalEmployees(total);
         }
 
+        // Fetch employees
         const { data: employeesData, error: employeesError } = await supabase
           .from('employees')
           .select('*');
@@ -69,14 +71,13 @@ const HRDashboard = () => {
           setFilteredEmployees(employeesData);
         }
       } catch (error) {
-        console.error('Error fetching employee data:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCentersData();
-    fetchEmployees();
+    fetchData();
   }, [user]);
 
   useEffect(() => {
