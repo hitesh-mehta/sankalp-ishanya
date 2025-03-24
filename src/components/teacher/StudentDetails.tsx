@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -84,6 +85,14 @@ const StudentDetails = ({ studentId, onBack }: StudentDetailsProps) => {
     );
   };
 
+  // Function to get the correct profile image based on gender
+  const getProfileImage = (gender: string) => {
+    if (gender && gender.toLowerCase() === 'female') {
+      return '/lovable-uploads/29e4e0c1-de7b-4d44-86ac-0d3635c81440.png'; // Female image
+    }
+    return '/lovable-uploads/fb9542e8-5f06-420d-8d09-80d9058b8158.png'; // Male image (default)
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -128,10 +137,13 @@ const StudentDetails = ({ studentId, onBack }: StudentDetailsProps) => {
           <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-1">
               <div className="flex items-center space-x-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={student.photo || `https://avatar.vercel.sh/${student.first_name} ${student.last_name}.png`} alt="Student Avatar" />
-                  <AvatarFallback>{student.first_name[0]}{student.last_name[0]}</AvatarFallback>
-                </Avatar>
+                <div className="h-16 w-16 rounded-full overflow-hidden">
+                  <img 
+                    src={getProfileImage(student.gender)}
+                    alt={`${student.first_name} ${student.last_name}`}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
                 <div className="space-y-1">
                   <h2 className="text-2xl font-semibold">{student.first_name} {student.last_name}</h2>
                   <p className="text-sm text-muted-foreground">
