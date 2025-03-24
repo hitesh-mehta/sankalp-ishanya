@@ -2,21 +2,21 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, DollarSign } from 'lucide-react';
+import { Edit, DollarSign, CalendarClock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PayrollForm from './PayrollForm';
+import { format } from 'date-fns';
 
 type EmployeePayrollProps = {
   employeeId: number;
 };
 
 type PayrollData = {
-  id: string;
   employee_id: number;
-  salary: number;
-  last_updated: string;
+  current_salary: number;
+  last_paid?: string;
 };
 
 const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
@@ -31,7 +31,7 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
         .from('employee_payroll')
         .select('*')
         .eq('employee_id', employeeId)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching payroll data:', error);
@@ -72,13 +72,9 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Not recorded';
+    return format(new Date(dateString), 'PPP');
   };
 
   return (
@@ -98,17 +94,22 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
             <LoadingSpinner />
           </div>
         ) : payrollData ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center">
               <DollarSign className="h-5 w-5 text-muted-foreground mr-2" />
               <div>
                 <p className="text-sm font-medium">Current Salary</p>
-                <p className="text-2xl font-bold">{formatCurrency(payrollData.salary)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(payrollData.current_salary)}</p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Last updated: {formatDate(payrollData.last_updated)}
-            </p>
+            
+            <div className="flex items-center">
+              <CalendarClock className="h-5 w-5 text-muted-foreground mr-2" />
+              <div>
+                <p className="text-sm font-medium">Last Paid Date</p>
+                <p className="text-md">{formatDate(payrollData.last_paid)}</p>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="text-center py-4">

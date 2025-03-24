@@ -5,21 +5,29 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type PayrollFormProps = {
   employeeId: number;
   existingData?: {
     id?: string;
     employee_id: number;
-    salary: number;
-    last_updated?: string;
+    current_salary: number;
+    last_paid?: string;
   } | null;
   onSave: () => void;
   onCancel: () => void;
 };
 
 const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollFormProps) => {
-  const [salary, setSalary] = useState<number>(existingData?.salary || 0);
+  const [salary, setSalary] = useState<number>(existingData?.current_salary || 0);
+  const [lastPaidDate, setLastPaidDate] = useState<Date | undefined>(
+    existingData?.last_paid ? new Date(existingData.last_paid) : undefined
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,15 +35,18 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
     setIsSubmitting(true);
 
     try {
-      if (existingData?.id) {
+      const payrollData = {
+        employee_id: employeeId,
+        current_salary: salary,
+        last_paid: lastPaidDate ? lastPaidDate.toISOString().split('T')[0] : null
+      };
+
+      if (existingData) {
         // Update existing record
         const { error } = await supabase
           .from('employee_payroll')
-          .update({
-            salary,
-            last_updated: new Date().toISOString()
-          })
-          .eq('id', existingData.id);
+          .update(payrollData)
+          .eq('employee_id', employeeId);
 
         if (error) throw error;
         toast.success('Payroll updated successfully');
@@ -43,11 +54,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
         // Insert new record
         const { error } = await supabase
           .from('employee_payroll')
-          .insert({
-            employee_id: employeeId,
-            salary,
-            last_updated: new Date().toISOString()
-          });
+          .insert(payrollData);
 
         if (error) throw error;
         toast.success('Payroll information added successfully');
@@ -75,6 +82,34 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
           step="1000"
           required
         />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="lastPaidDate">Last Paid Date</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              id="lastPaidDate"
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !lastPaidDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {lastPaidDate ? format(lastPaidDate, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={lastPaidDate}
+              onSelect={setLastPaidDate}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
       </div>
       
       <div className="flex justify-end space-x-2">
