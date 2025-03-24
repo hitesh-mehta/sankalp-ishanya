@@ -68,12 +68,14 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 31 }, (_, i) => currentYear - 15 + i);
 
+  // Fix the handleYearChange function
   const handleYearChange = (year: string) => {
     const newDate = new Date(calendarMonth);
     newDate.setFullYear(parseInt(year));
     setCalendarMonth(newDate);
   };
 
+  // Fix the handleMonthChange function
   const handleMonthChange = (month: string) => {
     const newDate = new Date(calendarMonth);
     newDate.setMonth(parseInt(month));
