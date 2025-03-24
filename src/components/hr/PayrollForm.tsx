@@ -59,27 +59,29 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Fix the calendar month state with explicit typing
+  // Fix the calendar month state with explicit Date type
   const [calendarMonth, setCalendarMonth] = useState<Date>(
-    lastPaidDate || new Date()
+    new Date(lastPaidDate || new Date())
   );
 
   // Generate years for the year dropdown (past 15 years to future 15 years)
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 31 }, (_, i) => currentYear - 15 + i);
 
-  // Fix the handleYearChange function
-  const handleYearChange = (year: string) => {
+  // Fix the handleYearChange function with explicit types
+  const handleYearChange = (yearStr: string) => {
+    const year = parseInt(yearStr, 10);
     const newDate = new Date(calendarMonth);
-    newDate.setFullYear(parseInt(year));
-    setCalendarMonth(newDate);
+    newDate.setFullYear(year);
+    setCalendarMonth(new Date(newDate));
   };
 
-  // Fix the handleMonthChange function
-  const handleMonthChange = (month: string) => {
+  // Fix the handleMonthChange function with explicit types
+  const handleMonthChange = (monthStr: string) => {
+    const month = parseInt(monthStr, 10);
     const newDate = new Date(calendarMonth);
-    newDate.setMonth(parseInt(month));
-    setCalendarMonth(newDate);
+    newDate.setMonth(month);
+    setCalendarMonth(new Date(newDate));
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -89,7 +91,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
     } else {
       newDate.setMonth(newDate.getMonth() + 1);
     }
-    setCalendarMonth(newDate);
+    setCalendarMonth(new Date(newDate));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -235,7 +237,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                     onSelect={setLastPaidDate}
                     initialFocus
                     month={calendarMonth}
-                    onMonthChange={setCalendarMonth}
+                    onMonthChange={(newMonth) => setCalendarMonth(new Date(newMonth))}
                     className="rounded-md border shadow-lg pointer-events-auto"
                   />
                 </div>
