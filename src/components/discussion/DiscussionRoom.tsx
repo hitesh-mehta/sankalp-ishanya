@@ -13,6 +13,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 type Message = {
   id: string;
+  sender_id: string; // Added the sender_id property
   sender_name: string;
   sender_role: string;
   message: string;
