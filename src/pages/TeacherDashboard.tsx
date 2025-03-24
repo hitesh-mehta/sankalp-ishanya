@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import AttendanceTracker from '@/components/teacher/AttendanceTracker';
 import TeacherReport from '@/components/teacher/TeacherReport';
+import StudentDetails from '@/components/teacher/StudentDetails';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, Eye } from 'lucide-react';
 
 const TeacherDashboard = () => {
   const [programs, setPrograms] = useState<any[]>([]);
@@ -20,6 +23,7 @@ const TeacherDashboard = () => {
   const [selectedProgram, setSelectedProgram] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'programs' | 'attendance' | 'report' | 'discussion'>('programs');
+  const [viewingStudentId, setViewingStudentId] = useState<number | null>(null);
   const user = getCurrentUser();
   const dataFetchedRef = useRef(false);
   const { toast } = useToast();
@@ -129,6 +133,31 @@ const TeacherDashboard = () => {
       setLoading(false);
     }
   };
+
+  const handleViewStudentDetails = (studentId: number) => {
+    setViewingStudentId(studentId);
+  };
+
+  const handleBackFromStudentDetails = () => {
+    setViewingStudentId(null);
+  };
+  
+  // If viewing a specific student, show the student details component
+  if (viewingStudentId !== null) {
+    return (
+      <Layout
+        title="Student Details"
+        subtitle="Detailed information about the student"
+        showBackButton={true}
+        onBack={handleBackFromStudentDetails}
+      >
+        <StudentDetails 
+          studentId={viewingStudentId}
+          onBack={handleBackFromStudentDetails}
+        />
+      </Layout>
+    );
+  }
   
   return (
     <Layout
@@ -158,7 +187,13 @@ const TeacherDashboard = () => {
                     </CardHeader>
                     <CardContent>
                       {programs.length === 0 ? (
-                        <p className="text-gray-500">No programs assigned to you yet.</p>
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>No Programs</AlertTitle>
+                          <AlertDescription>
+                            You don't have any programs assigned to you yet.
+                          </AlertDescription>
+                        </Alert>
                       ) : (
                         <Tabs 
                           defaultValue={selectedProgram?.toString()} 
@@ -182,7 +217,13 @@ const TeacherDashboard = () => {
                                 </CardHeader>
                                 <CardContent>
                                   {students.length === 0 ? (
-                                    <p className="text-gray-500">No students assigned to you in this program.</p>
+                                    <Alert>
+                                      <AlertCircle className="h-4 w-4" />
+                                      <AlertTitle>No Students</AlertTitle>
+                                      <AlertDescription>
+                                        You don't have any students assigned to you in this program.
+                                      </AlertDescription>
+                                    </Alert>
                                   ) : (
                                     <div className="overflow-x-auto">
                                       <Table>
@@ -215,15 +256,16 @@ const TeacherDashboard = () => {
                                               </TableCell>
                                               <TableCell>{student.number_of_sessions || 'N/A'}</TableCell>
                                               <TableCell>
-                                                <Button 
-                                                  variant="outline" 
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    setActiveTab('attendance');
-                                                  }}
-                                                >
-                                                  View Attendance
-                                                </Button>
+                                                <div className="flex gap-2">
+                                                  <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => handleViewStudentDetails(student.student_id)}
+                                                  >
+                                                    <Eye className="h-4 w-4 mr-1" />
+                                                    View Details
+                                                  </Button>
+                                                </div>
                                               </TableCell>
                                             </TableRow>
                                           ))}

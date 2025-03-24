@@ -98,7 +98,7 @@ const TeacherReport = () => {
         const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         
         const { data: attendance, error: attendanceError } = await supabase
-          .from('attendance')
+          .from('student_attendance')
           .select('*')
           .gte('date', format(firstDayOfMonth, 'yyyy-MM-dd'))
           .lte('date', format(lastDayOfMonth, 'yyyy-MM-dd'));
