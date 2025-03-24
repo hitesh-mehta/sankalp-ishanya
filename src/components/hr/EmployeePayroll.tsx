@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, DollarSign, CalendarClock, Plus } from 'lucide-react';
+import { Edit, IndianRupee, CalendarClock, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -95,7 +96,7 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
     <Card className="border-none shadow-md hover:shadow-lg transition-shadow duration-300">
       <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-r from-slate-50 to-slate-100 rounded-t-lg">
         <CardTitle className="text-lg font-medium flex items-center">
-          <DollarSign className="h-5 w-5 mr-2 text-primary" />
+          <IndianRupee className="h-5 w-5 mr-2 text-primary" />
           Payroll Information
         </CardTitle>
         <Button variant="outline" size="sm" onClick={handleAddPayroll} className="hover:bg-slate-200">
@@ -126,7 +127,7 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
                 
                 <div className="flex items-center">
                   <div className="bg-primary/10 p-3 rounded-full mr-4">
-                    <DollarSign className="h-6 w-6 text-primary" />
+                    <IndianRupee className="h-6 w-6 text-primary" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Salary</p>
@@ -139,7 +140,7 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
         ) : (
           <div className="text-center py-8">
             <div className="inline-flex justify-center items-center p-4 bg-primary/10 rounded-full mb-4">
-              <DollarSign className="h-8 w-8 text-primary" />
+              <IndianRupee className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-lg font-medium mb-2">No payroll information</h3>
             <p className="text-muted-foreground mb-4">

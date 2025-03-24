@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, DollarSign } from "lucide-react";
+import { CalendarIcon, IndianRupee } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -118,7 +118,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
           <div className="space-y-4">
             <Label htmlFor="salary" className="text-base font-medium">Salary Amount</Label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 id="salary"
                 type="number"
@@ -154,7 +154,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <div className="p-3 space-y-3">
-                  {/* Custom month/year selector */}
+                  {/* Month/year selector */}
                   <div className="flex space-x-2">
                     <div className="flex-1">
                       <Select
@@ -164,7 +164,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                         <SelectTrigger>
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper">
                           {months.map((month) => (
                             <SelectItem key={month.value} value={month.value.toString()}>
                               {month.label}
@@ -181,7 +181,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                         <SelectTrigger>
                           <SelectValue placeholder="Year" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper">
                           {years.map((year) => (
                             <SelectItem key={year} value={year.toString()}>
                               {year}
@@ -199,7 +199,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                     initialFocus
                     month={calendarMonth}
                     onMonthChange={setCalendarMonth}
-                    className="rounded-md border shadow-lg"
+                    className="rounded-md border shadow-lg pointer-events-auto"
                   />
                 </div>
               </PopoverContent>
