@@ -7,7 +7,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorDisplay from '@/components/ui/ErrorDisplay';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/auth';
-import supabase from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 
 const ParentDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -16,11 +16,6 @@ const ParentDashboard = () => {
   const { toast } = useToast();
   const user = getCurrentUser();
   const initialized = useRef(false);
-
-  // Redirect to the parent page which will handle detailed student info
-  const handleViewDetails = () => {
-    navigate('/parent/details');
-  };
   
   useEffect(() => {
     // Use a ref to ensure this effect only runs once
@@ -92,6 +87,19 @@ const ParentDashboard = () => {
     };
   }, []); // Empty dependency array - only run once on mount
   
+  // Navigation handlers for different sections
+  const handleViewStudentInfo = () => {
+    navigate('/parent/details', { state: { activeTab: 'student-info' } });
+  };
+  
+  const handleViewProgress = () => {
+    navigate('/parent/details', { state: { activeTab: 'progress' } });
+  };
+  
+  const handleViewCommunication = () => {
+    navigate('/parent/details', { state: { activeTab: 'communication' } });
+  };
+  
   return (
     <Layout
       title="Parent Dashboard"
@@ -117,7 +125,7 @@ const ParentDashboard = () => {
               <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
                 <h3 className="text-lg font-semibold text-blue-700 mb-3">Student Information</h3>
                 <p className="text-gray-600 mb-4">View detailed information about your child, including personal details, program enrollment, and session schedules.</p>
-                <Button onClick={handleViewDetails} className="w-full">
+                <Button onClick={handleViewStudentInfo} className="w-full">
                   View Details
                 </Button>
               </div>
@@ -125,7 +133,7 @@ const ParentDashboard = () => {
               <div className="bg-purple-50 p-6 rounded-lg border border-purple-100">
                 <h3 className="text-lg font-semibold text-purple-700 mb-3">Progress Tracking</h3>
                 <p className="text-gray-600 mb-4">Monitor your child's progress, download reports, and stay updated on their development journey.</p>
-                <Button variant="outline" onClick={handleViewDetails} className="w-full">
+                <Button variant="outline" onClick={handleViewProgress} className="w-full">
                   Track Progress
                 </Button>
               </div>
@@ -134,7 +142,7 @@ const ParentDashboard = () => {
             <div className="bg-green-50 p-6 rounded-lg border border-green-100">
               <h3 className="text-lg font-semibold text-green-700 mb-3">Educator Communication</h3>
               <p className="text-gray-600 mb-4">Contact your child's assigned educators, share feedback, and maintain open communication to support their learning journey.</p>
-              <Button variant="outline" onClick={handleViewDetails} className="w-full">
+              <Button variant="outline" onClick={handleViewCommunication} className="w-full">
                 Contact & Feedback
               </Button>
             </div>
