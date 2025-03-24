@@ -1,10 +1,9 @@
-
-import { useState } from 'react';
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, IndianRupee } from "lucide-react";
@@ -39,32 +38,25 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
       const payrollData = {
         employee_id: employeeId,
         current_salary: salary,
-        last_paid: lastPaidDate ? lastPaidDate.toISOString().split('T')[0] : null
+        last_paid: lastPaidDate ? lastPaidDate.toISOString().split("T")[0] : null,
       };
 
       if (existingData?.id) {
         // Update existing record
-        const { error } = await supabase
-          .from('employee_payroll')
-          .update(payrollData)
-          .eq('id', existingData.id);
-
+        const { error } = await supabase.from("employee_payroll").update(payrollData).eq("id", existingData.id);
         if (error) throw error;
-        toast.success('Payroll updated successfully');
+        toast.success("Payroll updated successfully");
       } else {
-        // Insert new record - don't check for existing records, allowing multiple entries
-        const { error } = await supabase
-          .from('employee_payroll')
-          .insert(payrollData);
-
+        // Insert new record
+        const { error } = await supabase.from("employee_payroll").insert([payrollData]);
         if (error) throw error;
-        toast.success('Payroll information added successfully');
+        toast.success("Payroll information added successfully");
       }
-      
+
       onSave();
     } catch (error: any) {
-      console.error('Error saving payroll data:', error);
-      toast.error(error.message || 'Failed to save payroll data');
+      console.error("Error saving payroll data:", error);
+      toast.error(error.message || "Failed to save payroll data");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,14 +67,16 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
       <CardContent className="p-0">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <Label htmlFor="salary" className="text-base font-medium">Salary Amount</Label>
+            <Label htmlFor="salary" className="text-base font-medium">
+              Salary Amount
+            </Label>
             <div className="relative">
               <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 id="salary"
                 type="number"
                 value={salary}
-                onChange={(e) => setSalary(Number(e.target.value))}
+                onChange={(e) => setSalary(e.target.value ? Number(e.target.value) : 0)}
                 min="0"
                 placeholder="Enter employee salary"
                 className="pl-10 text-lg"
@@ -90,56 +84,35 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
               />
             </div>
           </div>
-          
+
           <div className="space-y-4">
-            <Label htmlFor="lastPaidDate" className="text-base font-medium">Last Paid Date</Label>
+            <Label htmlFor="lastPaidDate" className="text-base font-medium">
+              Last Paid Date
+            </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   id="lastPaidDate"
                   variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal text-base py-6",
-                    !lastPaidDate && "text-muted-foreground"
-                  )}
+                  className={cn("w-full justify-start text-left font-normal text-base py-6", !lastPaidDate && "text-muted-foreground")}
                 >
                   <CalendarIcon className="mr-3 h-5 w-5" />
-                  {lastPaidDate ? (
-                    <span className="text-base">{format(lastPaidDate, "PPP")}</span>
-                  ) : (
-                    <span className="text-base">Select payment date</span>
-                  )}
+                  {lastPaidDate ? <span className="text-base">{format(lastPaidDate, "PPP")}</span> : <span className="text-base">Select payment date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white" align="start">
-                <Calendar
-                  mode="single"
-                  selected={lastPaidDate}
-                  onSelect={setLastPaidDate}
-                  initialFocus
-                />
+              <PopoverContent className="w-auto p-0 bg-white" align="start" side="bottom">
+                <Calendar mode="single" selected={lastPaidDate} onSelect={(date) => date && setLastPaidDate(date)} initialFocus />
               </PopoverContent>
             </Popover>
-            <p className="text-sm text-muted-foreground mt-1">
-              This is the date when the employee was last paid their salary
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">This is the date when the employee was last paid their salary</p>
           </div>
-          
+
           <div className="flex justify-end space-x-3 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onCancel}
-              className="px-6"
-            >
+            <Button type="button" variant="outline" onClick={onCancel} className="px-6">
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-              className="px-6"
-            >
-              {isSubmitting ? 'Saving...' : existingData ? 'Update Payroll' : 'Save Payroll'}
+            <Button type="submit" disabled={isSubmitting} className="px-6">
+              {isSubmitting ? "Saving..." : existingData ? "Update Payroll" : "Save Payroll"}
             </Button>
           </div>
         </form>
