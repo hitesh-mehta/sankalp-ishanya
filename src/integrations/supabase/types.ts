@@ -306,36 +306,48 @@ export type Database = {
       goals_tasks: {
         Row: {
           assigned_by: number
+          category: string | null
           created_at: string
           description: string | null
           due_date: string
           feedback: string | null
+          priority: string
           program_id: number
+          stage: string | null
           status: string
           student_id: number
           task_id: string
+          title: string | null
         }
         Insert: {
           assigned_by: number
+          category?: string | null
           created_at: string
           description?: string | null
           due_date: string
           feedback?: string | null
+          priority?: string
           program_id: number
+          stage?: string | null
           status?: string
           student_id: number
           task_id: string
+          title?: string | null
         }
         Update: {
           assigned_by?: number
+          category?: string | null
           created_at?: string
           description?: string | null
           due_date?: string
           feedback?: string | null
+          priority?: string
           program_id?: number
+          stage?: string | null
           status?: string
           student_id?: number
           task_id?: string
+          title?: string | null
         }
         Relationships: [
           {
@@ -760,7 +772,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      tasks_stage: "To Do" | "In Progress" | "Review" | "Done"
     }
     CompositeTypes: {
       [_ in never]: never
