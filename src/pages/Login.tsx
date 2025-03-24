@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authenticateUser } from '@/lib/api';
+import { authenticateUser } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,6 +80,14 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  // Here are some test credentials for the login form
+  const testCredentials = [
+    { role: 'administrator', email: 'employee3@company.com', password: '1234' },
+    { role: 'hr', email: 'employee9@company.com', password: '1234' },
+    { role: 'teacher', email: 'manish@gmail.com', password: '1234' },
+    { role: 'parent', email: 'parent1@gmail.com', password: '1234' }
+  ];
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 p-4">
@@ -179,6 +187,19 @@ const Login = () => {
                 </Button>
               </form>
             </Form>
+            
+            {/* Test credentials section for easier testing - remove in production */}
+            <div className="mt-6 p-2 border border-dashed border-gray-300 dark:border-gray-600 rounded">
+              <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Test Credentials:</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {testCredentials.map((cred, idx) => (
+                  <div key={idx} className="text-gray-500 dark:text-gray-400">
+                    <div><strong>{cred.role}:</strong></div>
+                    <div>{cred.email} / {cred.password}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="flex justify-center dark:text-gray-300">
             <p className="text-sm text-gray-500 dark:text-gray-400">

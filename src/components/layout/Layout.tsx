@@ -32,12 +32,12 @@ const Layout = ({ title, subtitle, children, showBackButton = false, onBack }: L
                 onClick={onBack}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                {t('common.back') || 'Back'}
+                {t('common.back')}
               </Button>
             )}
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{title}</h1>
-              {subtitle && <p className="text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
+              <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t(title) || title}</h1>
+              {subtitle && <p className="text-gray-500 dark:text-gray-400 mt-1">{t(subtitle) || subtitle}</p>}
             </div>
           </div>
           <div className="flex items-center gap-4">

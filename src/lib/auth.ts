@@ -58,23 +58,32 @@ export const authenticateUser = async (
       const employee = employees[0];
       
       // Check if the employee's role matches the selected role
-      const isAdmin = employee.department?.toLowerCase() === 'admin' || 
-                     employee.designation?.toLowerCase().includes('admin');
-      
-      const isHr = employee.department?.toLowerCase() === 'hr' || 
-                   employee.designation?.toLowerCase().includes('hr');
-      
-      const isTeacher = employee.designation?.toLowerCase().includes('educator') || 
-                       employee.designation?.toLowerCase().includes('teacher');
-      
       let userRole: 'administrator' | 'hr' | 'teacher' | null = null;
+      let isAdmin = false;
       
-      if (role === 'administrator' && isAdmin) {
-        userRole = 'administrator';
-      } else if (role === 'hr' && isHr) {
-        userRole = 'hr';
-      } else if (role === 'teacher' && isTeacher) {
-        userRole = 'teacher';
+      // Updated role checks - more specific checks for department and designation
+      if (role === 'administrator') {
+        // Admin if department is admin or designation contains admin
+        isAdmin = employee.department?.toLowerCase() === 'admin' || 
+                employee.designation?.toLowerCase().includes('admin');
+        if (isAdmin) {
+          userRole = 'administrator';
+        }
+      } else if (role === 'hr') {
+        // HR if department is HR or designation contains HR
+        const isHr = employee.department?.toLowerCase() === 'hr' || 
+                    employee.designation?.toLowerCase().includes('hr');
+        if (isHr) {
+          userRole = 'hr';
+        }
+      } else if (role === 'teacher') {
+        // Teacher if designation contains educator or teacher or department is educator
+        const isTeacher = employee.designation?.toLowerCase().includes('educator') || 
+                         employee.designation?.toLowerCase().includes('teacher') ||
+                         employee.department?.toLowerCase() === 'educator';
+        if (isTeacher) {
+          userRole = 'teacher';
+        }
       }
       
       if (!userRole) {
@@ -108,9 +117,9 @@ export const authenticateUser = async (
       // Query the parents table in Supabase
       const { data: parents, error } = await supabase
         .from('parents')
-        .select('*, students!inner(*)')
+        .select('*, students(*)')
         .eq('email', email)
-        .eq('password', password) // In a real app, this should use hashed passwords with bcrypt
+        .eq('password', password)
         .limit(1);
       
       if (error) {
@@ -132,13 +141,13 @@ export const authenticateUser = async (
       
       // Create parent user object
       const parentUser: User = {
-        id: parent.id,
-        parent_id: parent.parent_id || 0,
-        student_id: parent.students?.[0]?.student_id || 0,
-        name: parent.name || 'Parent',
+        id: parent.id.toString(),
+        parent_id: parent.id || 0,
+        student_id: parent.student_id || 0,
+        name: parent.email.split('@')[0] || 'Parent', // Use first part of email as name if available
         email: parent.email,
         isAdmin: false,
-        center_id: parent.center_id,
+        center_id: 0, // Default value since parents table might not have center_id
         role: 'parent'
       };
       

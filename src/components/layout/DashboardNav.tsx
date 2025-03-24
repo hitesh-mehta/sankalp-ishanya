@@ -6,6 +6,7 @@ import { logout, getCurrentUser, getUserRole } from '@/lib/auth';
 import { useState, useEffect, useRef } from 'react';
 import supabase from '@/lib/api';
 import { toast } from 'sonner';
+import { useLanguage } from '@/components/ui/LanguageProvider';
 
 export function DashboardNav() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export function DashboardNav() {
   const userRole = getUserRole();
   const [notificationCount, setNotificationCount] = useState(0);
   const fetchedRef = useRef(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Only fetch notifications for parents and teachers and only once
@@ -49,7 +51,7 @@ export function DashboardNav() {
   const handleLogout = () => {
     logout();
     navigate('/login');
-    toast.success('Logged out successfully');
+    toast.success(t('login.logout_success'));
   };
 
   const getButtonClassName = (path: string) => {
@@ -67,7 +69,7 @@ export function DashboardNav() {
         variant="ghost" 
         size="icon" 
         className="relative"
-        onClick={() => toast.info('Notifications feature coming soon')}
+        onClick={() => toast.info(t('dashboard.notifications') || 'Notifications feature coming soon')}
       >
         <Bell className="h-5 w-5 text-gray-600" />
         {notificationCount > 0 && (
@@ -143,8 +145,8 @@ export function DashboardNav() {
       </Button>
       
       {user && (
-        <span className="ml-2 text-sm font-medium text-gray-600 hidden md:inline-block">
-          {user.name} ({userRole})
+        <span className="ml-2 text-sm font-medium text-gray-600 dark:text-gray-300 hidden md:inline-block">
+          {user.name} ({t(`common.${userRole}`) || userRole})
         </span>
       )}
     </div>

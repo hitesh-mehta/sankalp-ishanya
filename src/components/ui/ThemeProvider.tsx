@@ -49,11 +49,16 @@ export function ThemeProvider({
     // Store the theme preference
     localStorage.setItem(storageKey, theme);
     
-    // Show a toast notification when theme changes
-    toast.success(
-      `${t('accessibility.theme_changed')} ${t(`common.theme.${theme}`)}`,
-      { duration: 2000 }
-    );
+    // Add a small delay before showing the toast to prevent it from being missed
+    const timer = setTimeout(() => {
+      // Show a toast notification when theme changes
+      toast.success(
+        `${t('accessibility.theme_changed')} ${t(`common.theme.${theme}`)}`,
+        { duration: 2000 }
+      );
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [theme, storageKey, t]);
 
   const value = {

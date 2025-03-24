@@ -30,9 +30,9 @@ const Header = ({ title, subtitle }: HeaderProps) => {
     >
       <div className="max-w-screen-2xl mx-auto flex justify-between items-center">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-balance dark:text-gray-900">{title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-balance dark:text-gray-900">{t(title) || title}</h1>
           {subtitle && (
-            <p className="mt-1 text-gray-700 dark:text-gray-800 max-w-3xl text-balance">{subtitle}</p>
+            <p className="mt-1 text-gray-700 dark:text-gray-800 max-w-3xl text-balance">{t(subtitle) || subtitle}</p>
           )}
         </div>
         <div className="ml-auto">

@@ -25,16 +25,55 @@ export function AccessibilityMenu() {
   // Apply dyslexia class to body when component mounts and when mode changes
   useEffect(() => {
     const applyDyslexiaMode = () => {
+      const root = document.documentElement;
+      
       if (isDyslexiaMode) {
-        document.body.classList.add("dyslexia-mode");
+        // Add dyslexia-friendly styles
+        root.classList.add("dyslexia-mode");
+        
+        // Add to stylesheet for smooth transitions and better visual experience
+        const style = document.createElement('style');
+        style.id = 'dyslexia-styles';
+        style.innerHTML = `
+          body.dyslexia-mode {
+            font-family: 'Open Sans', Arial, sans-serif;
+            line-height: 1.6;
+            letter-spacing: 0.05em;
+            word-spacing: 0.15em;
+          }
+          .dyslexia-mode p, .dyslexia-mode h1, .dyslexia-mode h2, .dyslexia-mode h3, 
+          .dyslexia-mode h4, .dyslexia-mode label, .dyslexia-mode span,
+          .dyslexia-mode button, .dyslexia-mode a, .dyslexia-mode input, 
+          .dyslexia-mode select, .dyslexia-mode textarea {
+            font-family: 'Open Sans', Arial, sans-serif !important;
+            line-height: 1.6 !important;
+            letter-spacing: 0.05em !important;
+            word-spacing: 0.15em !important;
+            transition: all 0.3s ease-in-out;
+          }
+          .dyslexia-mode p, .dyslexia-mode label, .dyslexia-mode span {
+            max-width: 70ch;
+            line-height: 1.8 !important;
+          }
+        `;
+        document.head.appendChild(style);
+        
+        // Set scroll behavior to smooth for better experience
         document.documentElement.style.scrollBehavior = 'smooth';
       } else {
-        document.body.classList.remove("dyslexia-mode");
+        // Remove dyslexia-friendly styles
+        root.classList.remove("dyslexia-mode");
+        const dyslexiaStyles = document.getElementById('dyslexia-styles');
+        if (dyslexiaStyles) {
+          dyslexiaStyles.remove();
+        }
+        
+        // Reset scroll behavior
         document.documentElement.style.scrollBehavior = 'auto';
       }
     };
     
-    // Apply with a slight delay to ensure smooth transition
+    // Apply the changes with a slight delay to ensure smooth transition
     const timer = setTimeout(() => {
       applyDyslexiaMode();
     }, 50);
@@ -47,12 +86,11 @@ export function AccessibilityMenu() {
 
   const toggleDyslexiaMode = () => {
     setIsDyslexiaMode(!isDyslexiaMode);
-    toast.success(
-      !isDyslexiaMode 
-        ? t('accessibility.dyslexia_enabled') || 'Dyslexia-friendly mode enabled' 
-        : t('accessibility.dyslexia_disabled') || 'Dyslexia-friendly mode disabled',
-      { duration: 2000 }
-    );
+    const message = !isDyslexiaMode 
+      ? t('accessibility.dyslexia_enabled') 
+      : t('accessibility.dyslexia_disabled');
+    
+    toast.success(message, { duration: 2000 });
   };
 
   return (
@@ -82,7 +120,7 @@ export function AccessibilityMenu() {
         
         <DropdownMenuSeparator />
         
-        <DropdownMenuLabel>{t("common.theme.title") || "Theme"}</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("common.theme.title")}</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="h-4 w-4 mr-2" />
           <span className={theme === "light" ? "font-bold" : ""}>

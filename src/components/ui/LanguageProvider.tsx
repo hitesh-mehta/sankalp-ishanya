@@ -52,10 +52,17 @@ const translations: Record<Language, Record<string, string>> = {
     "common.settings": "Settings",
     "common.profile": "Profile",
     "common.logout": "Logout",
+    "common.back": "Back",
     "accessibility.dyslexia_enabled": "Dyslexia-friendly mode enabled",
     "accessibility.dyslexia_disabled": "Dyslexia-friendly mode disabled",
     "accessibility.theme_changed": "Theme changed to",
     "accessibility.language_changed": "Language changed to",
+    "dashboard.welcome": "Welcome to your dashboard",
+    "dashboard.notifications": "Notifications",
+    "dashboard.recent_activity": "Recent Activity",
+    "dashboard.students": "Students",
+    "dashboard.announcements": "Announcements",
+    "dashboard.no_data": "No data available",
     // Add more translations as needed
   },
   hindi: {
@@ -84,10 +91,17 @@ const translations: Record<Language, Record<string, string>> = {
     "common.settings": "सेटिंग्स",
     "common.profile": "प्रोफ़ाइल",
     "common.logout": "लॉग आउट",
+    "common.back": "वापस",
     "accessibility.dyslexia_enabled": "डिस्लेक्सिया-अनुकूल मोड सक्षम",
     "accessibility.dyslexia_disabled": "डिस्लेक्सिया-अनुकूल मोड अक्षम",
     "accessibility.theme_changed": "थीम बदलकर कर दी गई है",
     "accessibility.language_changed": "भाषा बदलकर कर दी गई है",
+    "dashboard.welcome": "अपने डैशबोर्ड पर आपका स्वागत है",
+    "dashboard.notifications": "सूचनाएं",
+    "dashboard.recent_activity": "हाल की गतिविधि",
+    "dashboard.students": "छात्र",
+    "dashboard.announcements": "घोषणाएँ",
+    "dashboard.no_data": "कोई डेटा उपलब्ध नहीं है",
     // Add more translations as needed
   },
   kannada: {
@@ -116,10 +130,17 @@ const translations: Record<Language, Record<string, string>> = {
     "common.settings": "ಸೆಟ್ಟಿಂಗ್ಗಳು",
     "common.profile": "ಪ್ರೊಫೈಲ್",
     "common.logout": "ಲಾಗ್ ಔಟ್",
+    "common.back": "ಹಿಂದೆ",
     "accessibility.dyslexia_enabled": "ಡಿಸ್ಲೆಕ್ಸಿಯಾ-ಸ್ನೇಹಿ ಮೋಡ್ ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ",
     "accessibility.dyslexia_disabled": "ಡಿಸ್ಲೆಕ್ಸಿಯಾ-ಸ್ನೇಹಿ ಮೋಡ್ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ",
     "accessibility.theme_changed": "ಥೀಮ್ ಬದಲಾಯಿಸಲಾಗಿದೆ",
     "accessibility.language_changed": "ಭಾಷೆ ಬದಲಾಯಿಸಲಾಗಿದೆ",
+    "dashboard.welcome": "ನಿಮ್ಮ ಡ್ಯಾಶ್ಬೋರ್ಡ್‌ಗೆ ಸುಸ್ವಾಗತ",
+    "dashboard.notifications": "ಅಧಿಸೂಚನೆಗಳು",
+    "dashboard.recent_activity": "ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ",
+    "dashboard.students": "ವಿದ್ಯಾರ್ಥಿಗಳು",
+    "dashboard.announcements": "ಪ್ರಕಟಣೆಗಳು",
+    "dashboard.no_data": "ಯಾವುದೇ ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ",
     // Add more translations as needed
   }
 };
@@ -137,7 +158,6 @@ export function LanguageProvider({
   // Function to translate a key
   const translate = (key: string): string => {
     if (!translations[language][key]) {
-      console.warn(`Translation missing for key: ${key} in ${language}`);
       // Fall back to English if the key doesn't exist in the current language
       return translations.english[key] || key;
     }
@@ -147,10 +167,16 @@ export function LanguageProvider({
   // Update language in localStorage when it changes
   useEffect(() => {
     localStorage.setItem(storageKey, language);
-    toast.success(
-      `${translate('accessibility.language_changed')} ${translate(`common.${language}`)}`,
-      { duration: 2000 }
-    );
+    
+    // Add a small delay before showing the toast to prevent it from being missed
+    const timer = setTimeout(() => {
+      toast.success(
+        `${translate('accessibility.language_changed')} ${translate(`common.${language}`)}`,
+        { duration: 2000 }
+      );
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [language, storageKey]);
 
   const value = {
