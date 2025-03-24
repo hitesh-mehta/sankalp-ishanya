@@ -9,8 +9,8 @@ import DataManager from '@/components/admin/DataManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Users, GraduationCap } from 'lucide-react';
 import ProgramList from '@/components/programs/ProgramList';
-import TableList from '@/components/tables/TableList';
-import TableView from '@/components/tables/TableView';
+import TableListWrapper from '@/components/tables/TableListWrapper';
+import FilteredTableView from '@/components/tables/FilteredTableView';
 import AnnouncementBoard from '@/components/announcements/AnnouncementBoard';
 
 const Index = () => {
@@ -83,12 +83,12 @@ const Index = () => {
 
   const renderContent = () => {
     if (selectedTable && selectedProgram) {
-      return <TableView table={selectedTable} />;
+      return <FilteredTableView table={selectedTable} />;
     }
     
     if (selectedProgram) {
       return (
-        <TableList 
+        <TableListWrapper 
           program={selectedProgram} 
           onSelectTable={handleSelectTable} 
           selectedTable={selectedTable}

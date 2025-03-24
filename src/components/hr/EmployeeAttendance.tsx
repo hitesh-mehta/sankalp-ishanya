@@ -1,50 +1,42 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Calendar as CalendarIcon, Check, X } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { format, getDaysInMonth, getMonth, getYear, isValid, parse, startOfMonth } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { AlertCircle, Check, X, CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+
+type AttendanceRecord = {
+  employee_id: number;
+  date: string;
+  attendance: boolean;
+};
 
 type EmployeeAttendanceProps = {
   employeeId: number;
-};
-
-type AttendanceRecord = {
-  date: string;
-  attendance: boolean;
-  employee_id: number;
 };
 
 const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [attendance, setAttendance] = useState<boolean>(true);
+  const [savingAttendance, setSavingAttendance] = useState(false);
   const [presentDates, setPresentDates] = useState<Date[]>([]);
   const [absentDates, setAbsentDates] = useState<Date[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [isEditing, setIsEditing] = useState(false);
-  const { toast } = useToast();
 
-  // Get current year
-  const currentYear = new Date().getFullYear();
-  const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
+  useEffect(() => {
+    fetchAttendanceRecords();
+  }, [employeeId]);
 
-  const fetchAttendance = async () => {
+  const fetchAttendanceRecords = async () => {
     if (!employeeId) return;
     
     try {
@@ -53,145 +45,134 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
       
       console.log('Fetching attendance for employee ID:', employeeId);
       
-      // Fetch attendance for the current year
-      const startDate = `${currentYear}-01-01`;
-      const endDate = `${currentYear}-12-31`;
-      
-      const { data, error: attendanceError } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('employee_attendance')
         .select('*')
         .eq('employee_id', employeeId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: true });
+        .order('date', { ascending: false });
         
-      if (attendanceError) {
-        console.error('Error fetching attendance:', attendanceError);
+      if (fetchError) {
+        console.error('Error fetching attendance:', fetchError);
         setError('Could not load attendance records');
         return;
       }
       
       console.log('Attendance data received:', data);
+      setAttendanceRecords(data || []);
       
-      setAttendanceRecords(data as AttendanceRecord[] || []);
+      // Process dates for calendar display
+      const present: Date[] = [];
+      const absent: Date[] = [];
       
-      // Create arrays of dates where employee was present or absent
-      const presentDatesArray = (data as AttendanceRecord[])
-        .filter(record => record.attendance === true)
-        .map(record => {
-          const parsedDate = parse(record.date, 'yyyy-MM-dd', new Date());
-          return isValid(parsedDate) ? parsedDate : null;
-        })
-        .filter((date): date is Date => date !== null);
+      data?.forEach((record: AttendanceRecord) => {
+        const recordDate = new Date(record.date);
+        if (record.attendance) {
+          present.push(recordDate);
+        } else {
+          absent.push(recordDate);
+        }
+      });
       
-      const absentDatesArray = (data as AttendanceRecord[])
-        .filter(record => record.attendance === false)
-        .map(record => {
-          const parsedDate = parse(record.date, 'yyyy-MM-dd', new Date());
-          return isValid(parsedDate) ? parsedDate : null;
-        })
-        .filter((date): date is Date => date !== null);
+      setPresentDates(present);
+      setAbsentDates(absent);
       
-      setPresentDates(presentDatesArray);
-      setAbsentDates(absentDatesArray);
-    } catch (error) {
-      console.error('Error in fetchAttendance:', error);
+    } catch (err) {
+      console.error('Error in fetchAttendanceRecords:', err);
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchAttendance();
-  }, [employeeId]);
-
-  // Group attendance records by month
-  const groupedByMonth: { [key: string]: AttendanceRecord[] } = {};
   
-  attendanceRecords.forEach(record => {
-    const date = new Date(record.date);
-    const monthKey = format(date, 'MMMM');
-    
-    if (!groupedByMonth[monthKey]) {
-      groupedByMonth[monthKey] = [];
-    }
-    
-    groupedByMonth[monthKey].push(record);
-  });
-
-  // Calculate attendance percentage for each month
-  const calculateAttendancePercentage = (monthRecords: AttendanceRecord[], monthName: string) => {
-    const monthIndex = months.findIndex(m => m === monthName);
-    const daysInMonth = getDaysInMonth(new Date(currentYear, monthIndex));
-    const presentDays = monthRecords.filter(record => record.attendance).length;
-    
-    return (presentDays / daysInMonth) * 100;
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    if (isEditing && date) {
-      toggleAttendance(date);
-    }
-  };
-
-  const toggleAttendance = async (date: Date) => {
-    if (!employeeId) return;
-    
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    const existingRecord = attendanceRecords.find(record => record.date === formattedDate);
+  const handleSaveAttendance = async () => {
+    if (!employeeId || !selectedDate) return;
     
     try {
-      if (existingRecord) {
+      setSavingAttendance(true);
+      
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      
+      // Check if a record already exists for this date
+      const { data: existingData, error: checkError } = await supabase
+        .from('employee_attendance')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .eq('date', formattedDate);
+        
+      if (checkError) {
+        console.error('Error checking existing record:', checkError);
+        toast.error('Failed to check existing attendance record');
+        return;
+      }
+      
+      let error;
+      
+      if (existingData && existingData.length > 0) {
         // Update existing record
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from('employee_attendance')
-          .update({ attendance: !existingRecord.attendance })
+          .update({ attendance })
           .eq('employee_id', employeeId)
           .eq('date', formattedDate);
           
-        if (error) throw error;
+        error = updateError;
       } else {
         // Insert new record
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from('employee_attendance')
           .insert({
             employee_id: employeeId,
             date: formattedDate,
-            attendance: true
+            attendance
           });
           
-        if (error) throw error;
+        error = insertError;
       }
       
-      toast({
-        title: "Attendance updated",
-        description: "The attendance record has been updated successfully."
-      });
+      if (error) {
+        console.error('Error saving attendance:', error);
+        toast.error('Failed to save attendance record');
+        return;
+      }
       
-      // Refetch to get updated data
-      fetchAttendance();
-    } catch (error) {
-      console.error('Error updating attendance:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update attendance record.",
-        variant: "destructive"
-      });
+      toast.success(`Attendance marked as ${attendance ? 'Present' : 'Absent'} for ${format(selectedDate, 'PP')}`);
+      fetchAttendanceRecords(); // Refresh data
+      
+    } catch (err) {
+      console.error('Error in handleSaveAttendance:', err);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setSavingAttendance(false);
     }
   };
 
-  const toggleEditMode = () => {
-    setIsEditing(!isEditing);
-    setSelectedDate(undefined);
-  };
-
-  const isDatePresentOrAbsent = (date: Date) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    const record = attendanceRecords.find(rec => rec.date === formattedDate);
-    if (!record) return null;
-    return record.attendance ? 'present' : 'absent';
+  // Custom day renderer for the calendar
+  const customDayRenderer = (props: any, date: Date) => {
+    // Check if the date is in presentDates or absentDates
+    const isPresent = presentDates.some(
+      d => d.getDate() === date.getDate() && 
+          d.getMonth() === date.getMonth() && 
+          d.getFullYear() === date.getFullYear()
+    );
+    
+    const isAbsent = absentDates.some(
+      d => d.getDate() === date.getDate() && 
+          d.getMonth() === date.getMonth() && 
+          d.getFullYear() === date.getFullYear()
+    );
+    
+    return (
+      <div 
+        {...props}
+        className={cn(
+          props.className,
+          isPresent && 'bg-green-100 text-green-800 font-semibold hover:bg-green-200',
+          isAbsent && 'bg-red-100 text-red-800 font-semibold hover:bg-red-200'
+        )}
+      >
+        {date.getDate()}
+      </div>
+    );
   };
 
   if (loading) {
@@ -213,142 +194,141 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Attendance Calendar ({currentYear})</CardTitle>
-          <Button 
-            variant={isEditing ? "default" : "outline"} 
-            onClick={toggleEditMode}
-          >
-            {isEditing ? "Save" : "Edit Attendance"}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="flex-1">
-              {isEditing ? (
-                <div className="mb-2 text-sm text-muted-foreground">
-                  Click on a date to toggle attendance status
-                </div>
-              ) : null}
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                className="rounded-md border"
-                disabled={(date) => 
-                  getYear(date) !== currentYear || 
-                  date > new Date()
-                }
-                modifiers={{
-                  present: presentDates,
-                  absent: absentDates
-                }}
-                modifiersStyles={{
-                  present: {
-                    color: 'green',
-                    fontWeight: 'bold'
-                  },
-                  absent: {
-                    color: 'red',
-                    textDecoration: 'line-through'
-                  }
-                }}
-                components={{
-                  DayContent: (props) => {
-                    const status = isDatePresentOrAbsent(props.date);
-                    return (
-                      <div className="relative flex h-8 w-8 items-center justify-center">
-                        <div>{props.date.getDate()}</div>
-                        {status === 'present' && (
-                          <div className="absolute bottom-1 h-1 w-1 rounded-full bg-green-500"></div>
-                        )}
-                        {status === 'absent' && (
-                          <div className="absolute bottom-1 h-1 w-1 rounded-full bg-red-500"></div>
-                        )}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance Records</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div className="flex flex-col space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Mark Attendance</h3>
+                    <div className="flex space-x-2 mb-4">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="flex-1 justify-start text-left"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedDate ? format(selectedDate, 'PPP') : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                            components={{
+                              Day: ({ date, ...props }) => customDayRenderer(props, date)
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div className="flex space-x-2 mb-4">
+                      <Button
+                        variant={attendance ? "default" : "outline"}
+                        className="flex-1"
+                        onClick={() => setAttendance(true)}
+                      >
+                        <Check className="mr-2 h-4 w-4" />
+                        Present
+                      </Button>
+                      <Button
+                        variant={!attendance ? "default" : "outline"}
+                        className="flex-1"
+                        onClick={() => setAttendance(false)}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Absent
+                      </Button>
+                    </div>
+                    
+                    <Button 
+                      className="w-full" 
+                      onClick={handleSaveAttendance}
+                      disabled={savingAttendance}
+                    >
+                      {savingAttendance ? <LoadingSpinner size="sm" /> : 'Save Attendance'}
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium mb-2">Legend</h3>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-green-100 rounded-full mr-2"></div>
+                        <span className="text-sm">Present</span>
                       </div>
-                    );
-                  }
-                }}
-              />
-              <div className="mt-4 flex items-center justify-center gap-4">
-                <div className="flex items-center gap-1">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Present</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <X className="h-4 w-4 text-red-600" />
-                  <span className="text-sm">Absent</span>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-red-100 rounded-full mr-2"></div>
+                        <span className="text-sm">Absent</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex-1">
-              <h3 className="text-lg font-medium mb-4">Monthly Attendance</h3>
               
-              {Object.keys(groupedByMonth).length > 0 ? (
-                <Accordion type="single" collapsible className="w-full">
-                  {months.map((month) => {
-                    const records = groupedByMonth[month] || [];
-                    const attendancePercentage = records.length > 0 
-                      ? calculateAttendancePercentage(records, month) 
-                      : 0;
-                    
-                    return (
-                      <AccordionItem key={month} value={month}>
-                        <AccordionTrigger className="hover:bg-muted/50 px-4 py-2 rounded-md">
-                          <div className="flex justify-between items-center w-full pr-2">
-                            <span>{month}</span>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="h-2 w-24 bg-gray-200 rounded-full overflow-hidden"
-                                title={`${attendancePercentage.toFixed(0)}% attendance`}
-                              >
-                                <div 
-                                  className="h-full bg-primary" 
-                                  style={{ width: `${attendancePercentage}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm text-muted-foreground">
-                                {attendancePercentage.toFixed(0)}%
-                              </span>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="pl-4 mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {records.length > 0 ? (
-                              records.map((record) => (
-                                <div 
-                                  key={record.date} 
-                                  className={`text-sm p-2 rounded-md flex items-center gap-1.5 ${
-                                    record.attendance === true ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                                  }`}
-                                >
-                                  {record.attendance === true ? 
-                                    <Check className="h-3 w-3" /> : 
-                                    <X className="h-3 w-3" />
-                                  }
-                                  {format(new Date(record.date), 'd MMM')}
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-sm text-muted-foreground">No attendance records for {month}</p>
-                            )}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              ) : (
-                <p className="text-muted-foreground">No attendance records available for {currentYear}</p>
-              )}
+              <div>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  components={{
+                    Day: ({ date, ...props }) => customDayRenderer(props, date)
+                  }}
+                  className="rounded-md border"
+                />
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Attendance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {attendanceRecords.length === 0 ? (
+              <p className="text-center text-muted-foreground">No attendance records found</p>
+            ) : (
+              <div className="space-y-3">
+                {attendanceRecords.slice(0, 10).map((record, index) => (
+                  <div 
+                    key={index}
+                    className={cn(
+                      "p-3 rounded-md flex items-center justify-between",
+                      record.attendance ? "bg-green-50" : "bg-red-50"
+                    )}
+                  >
+                    <div className="flex items-center">
+                      {record.attendance ? (
+                        <Check className="h-4 w-4 text-green-600 mr-2" />
+                      ) : (
+                        <X className="h-4 w-4 text-red-600 mr-2" />
+                      )}
+                      <span>{format(new Date(record.date), 'PP')}</span>
+                    </div>
+                    <span className={cn(
+                      record.attendance ? "text-green-600" : "text-red-600"
+                    )}>
+                      {record.attendance ? 'Present' : 'Absent'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

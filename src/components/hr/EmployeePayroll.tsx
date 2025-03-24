@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 type EmployeePayrollProps = {
   employeeId: number;
@@ -29,7 +30,7 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<PayrollData | null>(null);
-  const { toast } = useToast();
+  const [date, setDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     const fetchPayrollData = async () => {
@@ -47,16 +48,14 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
           
         if (payrollError) {
           if (payrollError.code === 'PGRST116') {
-            setPayrollData({
+            // No record found, initialize with default values
+            const defaultData = {
               employee_id: employeeId,
               current_salary: 0,
               last_paid: null
-            });
-            setFormData({
-              employee_id: employeeId,
-              current_salary: 0,
-              last_paid: null
-            });
+            };
+            setPayrollData(defaultData);
+            setFormData(defaultData);
           } else {
             console.error('Error fetching payroll data:', payrollError);
             setError('Could not load payroll information');
@@ -66,6 +65,11 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
         
         setPayrollData(data as PayrollData);
         setFormData(data as PayrollData);
+        
+        // Set the date if last_paid is available
+        if (data.last_paid) {
+          setDate(new Date(data.last_paid));
+        }
       } catch (error) {
         console.error('Error in fetchPayrollData:', error);
         setError('An unexpected error occurred');
@@ -87,12 +91,14 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
     });
   };
 
-  const handleDateChange = (date: Date | undefined) => {
-    if (!formData || !date) return;
+  const handleDateChange = (newDate: Date | undefined) => {
+    setDate(newDate);
+    
+    if (!formData) return;
     
     setFormData({
       ...formData,
-      last_paid: format(date, 'yyyy-MM-dd')
+      last_paid: newDate ? format(newDate, 'yyyy-MM-dd') : null
     });
   };
 
@@ -109,17 +115,14 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
         
       if (checkError) {
         console.error('Error checking payroll record:', checkError);
-        toast({
-          title: "Error",
-          description: "Failed to update payroll information",
-          variant: "destructive",
-        });
+        toast.error('Failed to update payroll information');
         return;
       }
       
       let error;
       
       if (existingData && existingData.length > 0) {
+        // Update existing record
         const { error: updateError } = await supabase
           .from('employee_payroll')
           .update({
@@ -130,6 +133,7 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
           
         error = updateError;
       } else {
+        // Insert new record
         const { error: insertError } = await supabase
           .from('employee_payroll')
           .insert({
@@ -143,27 +147,16 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
       
       if (error) {
         console.error('Error saving payroll data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save payroll information",
-          variant: "destructive",
-        });
+        toast.error('Failed to save payroll information');
         return;
       }
       
       setPayrollData(formData);
       setIsEditing(false);
-      toast({
-        title: "Success",
-        description: "Payroll information updated successfully",
-      });
+      toast.success('Payroll information updated successfully');
     } catch (error) {
       console.error('Error in handleSave:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast.error('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -198,6 +191,11 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
             onClick={() => {
               if (isEditing) {
                 setFormData(payrollData);
+                if (payrollData?.last_paid) {
+                  setDate(new Date(payrollData.last_paid));
+                } else {
+                  setDate(undefined);
+                }
               }
               setIsEditing(!isEditing);
             }}
@@ -244,22 +242,18 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !formData.last_paid && "text-muted-foreground"
+                          !date && "text-muted-foreground"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.last_paid 
-                          ? format(new Date(formData.last_paid), 'PPP') 
-                          : "Select date"
-                        }
+                        {date ? format(date, 'PPP') : "Select date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={formData.last_paid ? new Date(formData.last_paid) : undefined}
+                        selected={date}
                         onSelect={handleDateChange}
-                        className="pointer-events-auto"
                         initialFocus
                       />
                     </PopoverContent>

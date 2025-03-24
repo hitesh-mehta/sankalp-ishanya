@@ -1,18 +1,19 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TableInfo, fetchTablesByProgram } from '@/lib/api';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import TableView from './TableView';
+import FilteredTableView from './FilteredTableView';
 
-type TableListProps = {
+type TableListWrapperProps = {
   program: any;
   onSelectTable: (table: TableInfo) => void;
   selectedTable: TableInfo | null;
 };
 
-const TableList = ({ program, onSelectTable, selectedTable }: TableListProps) => {
+const TableListWrapper = ({ program, onSelectTable, selectedTable }: TableListWrapperProps) => {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,13 +23,13 @@ const TableList = ({ program, onSelectTable, selectedTable }: TableListProps) =>
       try {
         setLoading(true);
         setError(null);
-
+        
         const tablesData = await fetchTablesByProgram(program.program_id);
         if (!tablesData) {
           setError('Failed to fetch tables');
           return;
         }
-
+        
         setTables(tablesData);
       } catch (err) {
         console.error('Error in fetchTables:', err);
@@ -37,7 +38,7 @@ const TableList = ({ program, onSelectTable, selectedTable }: TableListProps) =>
         setLoading(false);
       }
     };
-
+    
     fetchTables();
   }, [program]);
 
@@ -60,13 +61,13 @@ const TableList = ({ program, onSelectTable, selectedTable }: TableListProps) =>
   }
 
   if (selectedTable) {
-    return <TableView table={selectedTable} />;
+    return <FilteredTableView table={selectedTable} />;
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {tables.map((table) => (
-        <Card
+        <Card 
           key={table.id}
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => onSelectTable(table)}
@@ -83,4 +84,4 @@ const TableList = ({ program, onSelectTable, selectedTable }: TableListProps) =>
   );
 };
 
-export default TableList;
+export default TableListWrapper;
