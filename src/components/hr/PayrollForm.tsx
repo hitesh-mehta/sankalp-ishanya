@@ -98,7 +98,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                   {lastPaidDate ? <span className="text-base">{format(lastPaidDate, "PPP")}</span> : <span className="text-base">Select payment date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white" align="center" side="bottom" sideOffset={10}>
+              <PopoverContent className="w-auto p-0 bg-white" align="center" side="bottom" sideOffset={10} avoidCollisions={true}>
                 <Calendar mode="single" selected={lastPaidDate} onSelect={(date) => date && setLastPaidDate(date)} initialFocus />
               </PopoverContent>
             </Popover>
