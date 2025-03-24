@@ -164,8 +164,8 @@ const FilteredTableView = ({ table }: FilteredTableViewProps) => {
   return (
     <div>
       <TableActions
-        table={table}
-        onAddClick={() => {
+        tableName={table.name}
+        onInsert={() => {
           setShowForm(true);
           setIsEditing(false);
           setSelectedRow(null);
@@ -186,7 +186,7 @@ const FilteredTableView = ({ table }: FilteredTableViewProps) => {
           
           setFormData(defaultFormData);
         }}
-        onUploadClick={() => setShowUpload(true)}
+        onRefresh={() => window.location.reload()}
       />
       
       {showUpload && (
@@ -206,7 +206,7 @@ const FilteredTableView = ({ table }: FilteredTableViewProps) => {
                 setShowUpload(false);
                 window.location.reload();
               }}
-              onCancel={() => setShowUpload(false)}
+              onClose={() => setShowUpload(false)}
             />
           </CardContent>
         </Card>

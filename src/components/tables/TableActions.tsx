@@ -6,10 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import CsvUpload from './CsvUpload';
 import { toast } from 'sonner';
 
-type TableActionsProps = {
+export type TableActionsProps = {
   tableName: string;
   onInsert: () => void;
   onRefresh: () => void;
+  table?: any; // Added this prop to fix the type error
 };
 
 const TableActions = ({ tableName, onInsert, onRefresh }: TableActionsProps) => {
