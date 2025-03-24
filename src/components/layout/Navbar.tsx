@@ -1,59 +1,107 @@
 
-import { Building2 } from 'lucide-react';
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { getCurrentUser, clearUserSession } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { LogOut, User } from 'lucide-react';
+import DyslexiaToggle from '@/components/ui/DyslexiaToggle';
 
-type NavbarProps = {
-  centerName?: string;
-  programName?: string;
-  onBack?: () => void;
-  showBackButton?: boolean;
-};
-
-const Navbar = ({ centerName, programName, onBack, showBackButton = false }: NavbarProps) => {
+const Navbar = () => {
+  const user = getCurrentUser();
   const navigate = useNavigate();
-
-  const handleLogoClick = useCallback(() => {
-    navigate('/');
-  }, [navigate]);
-
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Handle logout
+  const handleLogout = () => {
+    clearUserSession();
+    navigate('/login');
+  };
+  
+  if (!user) return null;
+  
+  // Get initials from user name
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+  
+  // Get color based on user role
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'administrator':
+        return 'bg-red-500 text-white';
+      case 'hr':
+        return 'bg-purple-500 text-white';
+      case 'teacher':
+        return 'bg-blue-500 text-white';
+      case 'parent':
+        return 'bg-green-500 text-white';
+      default:
+        return 'bg-gray-500 text-white';
+    }
+  };
+  
   return (
-    <nav className="w-full bg-ishanya-green text-white shadow-md z-10">
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <div 
-              className="flex-shrink-0 cursor-pointer flex items-center"
-              onClick={handleLogoClick}
-            >
-              <Building2 className="h-8 w-8 mr-2" />
-              <span className="font-bold text-xl">Ishanya Foundation</span>
+    <nav className="border-b border-border">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <Link to="/">
+                <img 
+                  src="/lovable-uploads/17953c8a-6715-4e58-af68-a3918c44fd33.png" 
+                  alt="Ishanya Foundation" 
+                  className="h-10 w-auto" 
+                />
+              </Link>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            {showBackButton && (
-              <button 
-                onClick={onBack}
-                className="rounded-full bg-white/20 hover:bg-white/30 px-4 py-1 text-white transition-colors duration-200"
-              >
-                Back
-              </button>
-            )}
+          <div className="flex items-center space-x-4">
+            {/* Dyslexia Toggle */}
+            <DyslexiaToggle />
             
-            {centerName && (
-              <div className="hidden md:block">
-                <div className="text-sm opacity-70">Center</div>
-                <div className="font-medium">{centerName}</div>
-              </div>
-            )}
-            
-            {programName && (
-              <div className="hidden md:block">
-                <div className="text-sm opacity-70">Program</div>
-                <div className="font-medium">{programName}</div>
-              </div>
-            )}
+            {/* User menu dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className={getRoleColor(user.role)}>
+                      {getInitials(user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    <p className="text-xs font-medium mt-1 bg-gray-100 text-gray-800 rounded px-1.5 py-0.5 w-fit">
+                      {user.role}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

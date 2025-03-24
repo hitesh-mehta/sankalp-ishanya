@@ -1,3 +1,4 @@
+@import url('https://fonts.cdnfonts.com/css/opendyslexic');
 
 @tailwind base;
 @tailwind components;
@@ -43,6 +44,11 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Dyslexia-friendly variables */
+    --letter-spacing: 0.05em;
+    --line-height: 1.8;
+    --paragraph-spacing: 1.5rem;
   }
 
   .dark {
@@ -83,6 +89,33 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  /* Apply base dyslexia-friendly styles */
+  .dyslexia-mode {
+    letter-spacing: var(--letter-spacing);
+    line-height: var(--line-height);
+  }
+
+  .dyslexia-mode p, 
+  .dyslexia-mode div, 
+  .dyslexia-mode span {
+    margin-bottom: var(--paragraph-spacing);
+  }
+
+  .dyslexia-mode * {
+    font-family: 'OpenDyslexic', 'Comic Sans MS', Arial, sans-serif;
+  }
+
+  .dyslexia-mode h1, 
+  .dyslexia-mode h2, 
+  .dyslexia-mode h3, 
+  .dyslexia-mode h4, 
+  .dyslexia-mode h5, 
+  .dyslexia-mode h6 {
+    font-weight: 700;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+  }
 }
 
 @layer base {
@@ -107,6 +140,24 @@
   
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Dyslexia-friendly utilities */
+  .dyslexic-font {
+    font-family: 'OpenDyslexic', 'Comic Sans MS', Arial, sans-serif;
+  }
+  
+  .dyslexic-spacing {
+    letter-spacing: 0.05em;
+    line-height: 1.8;
+  }
+  
+  .dyslexic-paragraphs p {
+    margin-bottom: 1.5rem;
+  }
+  
+  .dyslexic-friendly-bg {
+    @apply bg-amber-50;
   }
 }
 

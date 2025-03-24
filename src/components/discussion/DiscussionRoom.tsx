@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import DyslexiaToggle from '@/components/ui/DyslexiaToggle';
 
 type Message = {
   id: string;
@@ -204,8 +205,9 @@ const DiscussionRoom = () => {
   
   return (
     <Card className="h-[70vh] flex flex-col">
-      <CardHeader>
+      <CardHeader className="flex flex-row justify-between items-center">
         <CardTitle>Discussion Room</CardTitle>
+        <DyslexiaToggle />
       </CardHeader>
       
       <CardContent className="flex-grow overflow-hidden p-0">
@@ -216,18 +218,18 @@ const DiscussionRoom = () => {
         ) : (
           <ScrollArea className="h-[calc(70vh-8rem)] px-4">
             {messages.length === 0 ? (
-              <div className="flex justify-center items-center h-full text-gray-400">
+              <div className="flex justify-center items-center h-full text-gray-400 dyslexic-spacing">
                 No messages yet. Be the first to start the discussion!
               </div>
             ) : (
-              <div className="space-y-4 pt-2">
+              <div className="space-y-6 pt-4">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
                     className={`flex gap-3 ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
                     {msg.sender_id !== user?.id && (
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-10 w-10">
                         <AvatarFallback className={getRoleColor(msg.sender_role)}>
                           {getInitials(msg.sender_name)}
                         </AvatarFallback>
@@ -235,14 +237,14 @@ const DiscussionRoom = () => {
                     )}
                     
                     <div
-                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                      className={`max-w-[80%] rounded-lg px-4 py-3 text-sm ${
                         msg.sender_id === user?.id
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-100 text-gray-800'
                       }`}
                     >
                       {msg.sender_id !== user?.id && (
-                        <div className="font-semibold mb-1 flex items-center gap-2">
+                        <div className="font-semibold mb-2 flex items-center gap-2">
                           {msg.sender_name}
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full ${getRoleColor(msg.sender_role)}`}
@@ -251,9 +253,9 @@ const DiscussionRoom = () => {
                           </span>
                         </div>
                       )}
-                      <div className="whitespace-pre-wrap">{msg.message}</div>
+                      <div className="whitespace-pre-wrap dyslexic-spacing">{msg.message}</div>
                       <div
-                        className={`text-xs mt-1 ${
+                        className={`text-xs mt-2 ${
                           msg.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'
                         }`}
                       >
@@ -262,7 +264,7 @@ const DiscussionRoom = () => {
                     </div>
                     
                     {msg.sender_id === user?.id && (
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-10 w-10">
                         <AvatarFallback className={getRoleColor(user.role)}>
                           {getInitials(user.name)}
                         </AvatarFallback>
@@ -277,14 +279,14 @@ const DiscussionRoom = () => {
         )}
       </CardContent>
       
-      <CardFooter className="border-t p-3">
+      <CardFooter className="border-t p-4">
         <div className="flex w-full gap-2">
           <Textarea
             placeholder="Type your message here..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="min-h-[60px] flex-grow"
+            className="min-h-[60px] flex-grow text-base"
             disabled={isSending || !user}
           />
           <Button
