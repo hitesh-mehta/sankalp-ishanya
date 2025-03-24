@@ -53,7 +53,7 @@ export function ThemeProvider({
     const timer = setTimeout(() => {
       // Show a toast notification when theme changes
       toast.success(
-        `${t('accessibility.theme_changed')} ${t(`common.theme.${theme}`)}`,
+        `${t('accessibility.theme_changed') || 'Theme changed to'} ${t(`common.theme.${theme}`) || theme}`,
         { duration: 2000 }
       );
     }, 100);

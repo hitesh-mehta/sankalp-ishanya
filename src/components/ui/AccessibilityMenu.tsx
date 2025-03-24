@@ -87,8 +87,8 @@ export function AccessibilityMenu() {
   const toggleDyslexiaMode = () => {
     setIsDyslexiaMode(!isDyslexiaMode);
     const message = !isDyslexiaMode 
-      ? t('accessibility.dyslexia_enabled') 
-      : t('accessibility.dyslexia_disabled');
+      ? (t('accessibility.dyslexia_enabled') || 'Dyslexia-friendly mode enabled')
+      : (t('accessibility.dyslexia_disabled') || 'Dyslexia-friendly mode disabled');
     
     toast.success(message, { duration: 2000 });
   };
@@ -101,36 +101,36 @@ export function AccessibilityMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>{t("common.language")}</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("common.language") || "Language"}</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setLanguage("english")}>
           <span className={language === "english" ? "font-bold" : ""}>
-            {t("common.english")}
+            {t("common.english") || "English"}
           </span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setLanguage("hindi")}>
           <span className={language === "hindi" ? "font-bold" : ""}>
-            {t("common.hindi")}
+            {t("common.hindi") || "Hindi"}
           </span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setLanguage("kannada")}>
           <span className={language === "kannada" ? "font-bold" : ""}>
-            {t("common.kannada")}
+            {t("common.kannada") || "Kannada"}
           </span>
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />
         
-        <DropdownMenuLabel>{t("common.theme.title")}</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("common.theme.title") || "Theme"}</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="h-4 w-4 mr-2" />
           <span className={theme === "light" ? "font-bold" : ""}>
-            {t("common.theme.light")}
+            {t("common.theme.light") || "Light"}
           </span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon className="h-4 w-4 mr-2" />
           <span className={theme === "dark" ? "font-bold" : ""}>
-            {t("common.theme.dark")}
+            {t("common.theme.dark") || "Dark"}
           </span>
         </DropdownMenuItem>
         
@@ -139,8 +139,8 @@ export function AccessibilityMenu() {
         <DropdownMenuItem onClick={toggleDyslexiaMode}>
           <BookOpen className="h-4 w-4 mr-2" />
           {isDyslexiaMode 
-            ? t("common.disable") + " " + t("common.dyslexia")
-            : t("common.enable") + " " + t("common.dyslexia")}
+            ? (t("common.disable") || "Disable") + " " + (t("common.dyslexia") || "Dyslexia Mode")
+            : (t("common.enable") || "Enable") + " " + (t("common.dyslexia") || "Dyslexia Mode")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

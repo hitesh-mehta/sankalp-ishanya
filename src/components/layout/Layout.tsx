@@ -39,7 +39,7 @@ const Layout = ({ title, subtitle, children, showBackButton = false, onBack }: L
                 onClick={onBack}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                {t('common.back')}
+                {t('common.back') || 'Back'}
               </Button>
             )}
             <div>

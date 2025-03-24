@@ -29,6 +29,14 @@ const translations: Record<Language, Record<string, string>> = {
     'common.success': 'Success',
     'common.theme.dark': 'Dark',
     'common.theme.light': 'Light',
+    'common.theme.title': 'Theme',
+    'common.language': 'Language',
+    'common.english': 'English',
+    'common.hindi': 'Hindi',
+    'common.kannada': 'Kannada',
+    'common.enable': 'Enable',
+    'common.disable': 'Disable',
+    'common.dyslexia': 'Dyslexia Mode',
     
     'login.title': 'Login to Your Account',
     'login.subtitle': 'Enter your credentials to access your account',
@@ -72,6 +80,14 @@ const translations: Record<Language, Record<string, string>> = {
     'common.success': 'सफलता',
     'common.theme.dark': 'डार्क',
     'common.theme.light': 'लाइट',
+    'common.theme.title': 'थीम',
+    'common.language': 'भाषा',
+    'common.english': 'अंग्रेजी',
+    'common.hindi': 'हिंदी',
+    'common.kannada': 'कन्नड़',
+    'common.enable': 'सक्षम करें',
+    'common.disable': 'अक्षम करें',
+    'common.dyslexia': 'डिस्लेक्सिया मोड',
     
     'login.title': 'अपने खाते में लॉगिन करें',
     'login.subtitle': 'अपने खाते तक पहुंचने के लिए अपना प्रमाण पत्र दर्ज करें',
@@ -115,6 +131,14 @@ const translations: Record<Language, Record<string, string>> = {
     'common.success': 'ಯಶಸ್ಸು',
     'common.theme.dark': 'ಡಾರ್ಕ್',
     'common.theme.light': 'ಲೈಟ್',
+    'common.theme.title': 'ಥೀಮ್',
+    'common.language': 'ಭಾಷೆ',
+    'common.english': 'ಇಂಗ್ಲಿಷ್',
+    'common.hindi': 'ಹಿಂದಿ',
+    'common.kannada': 'ಕನ್ನಡ',
+    'common.enable': 'ಸಕ್ರಿಯಗೊಳಿಸಿ',
+    'common.disable': 'ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿ',
+    'common.dyslexia': 'ಡಿಸ್ಲೆಕ್ಸಿಯಾ ಮೋಡ್',
     
     'login.title': 'ನಿಮ್ಮ ಖಾತೆಗೆ ಲಾಗಿನ್ ಮಾಡಿ',
     'login.subtitle': 'ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಪ್ರವೇಶಿಸಲು ನಿಮ್ಮ ರುಜುವಾತುಗಳನ್ನು ನಮೂದಿಸಿ',
@@ -162,6 +186,29 @@ export const LanguageProvider = ({ children, defaultLanguage = 'english' }: Lang
   // Save language preference to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('language', language);
+    
+    // Notify user about language change
+    const timer = setTimeout(() => {
+      const root = document.documentElement;
+      const style = document.createElement('style');
+      style.id = 'language-transition';
+      style.innerHTML = `
+        * {
+          transition: all 0.3s ease;
+        }
+      `;
+      
+      document.head.appendChild(style);
+      
+      setTimeout(() => {
+        const languageTransition = document.getElementById('language-transition');
+        if (languageTransition) {
+          languageTransition.remove();
+        }
+      }, 500);
+    }, 50);
+    
+    return () => clearTimeout(timer);
   }, [language]);
 
   // Translation function
