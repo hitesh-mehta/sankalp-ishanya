@@ -30,8 +30,8 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
-        <LanguageProvider defaultLanguage="english">
+      <LanguageProvider defaultLanguage="english">
+        <ThemeProvider defaultTheme="light">
           <TooltipProvider>
             <Toaster />
             <Sonner position="top-right" className="dark:bg-gray-800 dark:text-white" />
@@ -82,8 +82,8 @@ const App = () => {
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
-        </LanguageProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 };
