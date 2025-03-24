@@ -257,6 +257,7 @@ export type Database = {
           description: string | null
           due_date: string
           feedback: string | null
+          program_id: number
           status: string
           student_id: number
           task_id: string
@@ -267,6 +268,7 @@ export type Database = {
           description?: string | null
           due_date: string
           feedback?: string | null
+          program_id: number
           status?: string
           student_id: number
           task_id: string
@@ -277,6 +279,7 @@ export type Database = {
           description?: string | null
           due_date?: string
           feedback?: string | null
+          program_id?: number
           status?: string
           student_id?: number
           task_id?: string
