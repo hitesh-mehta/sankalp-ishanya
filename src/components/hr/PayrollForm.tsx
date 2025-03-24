@@ -111,13 +111,12 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white z-50" align="start">
+              <PopoverContent className="w-auto p-0 bg-white" align="start">
                 <Calendar
                   mode="single"
                   selected={lastPaidDate}
                   onSelect={setLastPaidDate}
                   initialFocus
-                  className="rounded-md border shadow-lg p-3 pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
