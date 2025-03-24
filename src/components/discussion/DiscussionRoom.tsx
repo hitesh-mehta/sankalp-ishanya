@@ -35,8 +35,8 @@ const DiscussionRoom = () => {
       const { data, error } = await supabase
         .from('discussion_messages')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(30);
+        .order('created_at', { ascending: true })
+        .limit(100);
         
       if (error) {
         console.error('Error fetching messages:', error);
@@ -49,8 +49,8 @@ const DiscussionRoom = () => {
       }
       
       if (data) {
-        // Reverse to show oldest messages first
-        setMessages(data.reverse());
+        setMessages(data);
+        console.log('Fetched messages:', data);
       }
     } catch (error) {
       console.error('Error in fetchMessages:', error);
@@ -76,13 +76,8 @@ const DiscussionRoom = () => {
         (payload) => {
           // Add new message to the list
           const newMsg = payload.new as Message;
-          setMessages((prevMessages) => {
-            // If we already have 30 messages, remove the oldest one
-            if (prevMessages.length >= 30) {
-              return [...prevMessages.slice(1), newMsg];
-            }
-            return [...prevMessages, newMsg];
-          });
+          console.log('New message received:', newMsg);
+          setMessages((prevMessages) => [...prevMessages, newMsg]);
         }
       )
       .subscribe();
@@ -104,14 +99,23 @@ const DiscussionRoom = () => {
     
     try {
       setIsSending(true);
-      const { error } = await supabase
+      
+      console.log('Sending message:', {
+        sender_id: user.id,
+        sender_name: user.name,
+        sender_role: user.role,
+        message: newMessage.trim(),
+      });
+      
+      const { error, data } = await supabase
         .from('discussion_messages')
         .insert({
           sender_id: user.id,
           sender_name: user.name,
           sender_role: user.role,
           message: newMessage.trim(),
-        });
+        })
+        .select();
         
       if (error) {
         console.error('Error sending message:', error);
@@ -122,6 +126,8 @@ const DiscussionRoom = () => {
         });
         return;
       }
+      
+      console.log('Message sent successfully:', data);
       
       // Clear input after successful send
       setNewMessage('');
