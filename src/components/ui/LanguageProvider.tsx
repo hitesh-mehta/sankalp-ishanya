@@ -34,15 +34,28 @@ const translations: Record<Language, Record<string, string>> = {
     "login.role": "Role",
     "login.button": "Sign In",
     "login.contact": "Contact administrator if you need access",
+    "login.logout_success": "Logged out successfully",
     "common.enable": "Enable",
     "common.disable": "Disable",
     "common.dyslexia": "Dyslexia-Friendly Mode",
+    "common.theme.title": "Theme",
     "common.theme.light": "Light Mode",
     "common.theme.dark": "Dark Mode",
     "common.language": "Language",
     "common.english": "English",
     "common.hindi": "Hindi",
     "common.kannada": "Kannada",
+    "common.dashboard": "Dashboard",
+    "common.students": "Students",
+    "common.employees": "Employees",
+    "common.reports": "Reports",
+    "common.settings": "Settings",
+    "common.profile": "Profile",
+    "common.logout": "Logout",
+    "accessibility.dyslexia_enabled": "Dyslexia-friendly mode enabled",
+    "accessibility.dyslexia_disabled": "Dyslexia-friendly mode disabled",
+    "accessibility.theme_changed": "Theme changed to",
+    "accessibility.language_changed": "Language changed to",
     // Add more translations as needed
   },
   hindi: {
@@ -53,15 +66,28 @@ const translations: Record<Language, Record<string, string>> = {
     "login.role": "भूमिका",
     "login.button": "साइन इन करें",
     "login.contact": "यदि आपको एक्सेस की आवश्यकता है तो व्यवस्थापक से संपर्क करें",
+    "login.logout_success": "आप सफलतापूर्वक लॉग आउट हो गए हैं",
     "common.enable": "सक्षम करें",
     "common.disable": "अक्षम करें",
     "common.dyslexia": "डिस्लेक्सिया-अनुकूल मोड",
+    "common.theme.title": "थीम",
     "common.theme.light": "लाइट मोड",
     "common.theme.dark": "डार्क मोड",
     "common.language": "भाषा",
     "common.english": "अंग्रेज़ी",
     "common.hindi": "हिंदी",
     "common.kannada": "कन्नड़",
+    "common.dashboard": "डैशबोर्ड",
+    "common.students": "छात्र",
+    "common.employees": "कर्मचारी",
+    "common.reports": "रिपोर्ट",
+    "common.settings": "सेटिंग्स",
+    "common.profile": "प्रोफ़ाइल",
+    "common.logout": "लॉग आउट",
+    "accessibility.dyslexia_enabled": "डिस्लेक्सिया-अनुकूल मोड सक्षम",
+    "accessibility.dyslexia_disabled": "डिस्लेक्सिया-अनुकूल मोड अक्षम",
+    "accessibility.theme_changed": "थीम बदलकर कर दी गई है",
+    "accessibility.language_changed": "भाषा बदलकर कर दी गई है",
     // Add more translations as needed
   },
   kannada: {
@@ -72,15 +98,28 @@ const translations: Record<Language, Record<string, string>> = {
     "login.role": "ಪಾತ್ರ",
     "login.button": "ಸೈನ್ ಇನ್",
     "login.contact": "ನಿಮಗೆ ಪ್ರವೇಶ ಬೇಕಿದ್ದರೆ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ",
+    "login.logout_success": "ನೀವು ಯಶಸ್ವಿಯಾಗಿ ಲಾಗ್ ಔಟ್ ಆಗಿದ್ದೀರಿ",
     "common.enable": "ಸಕ್ರಿಯಗೊಳಿಸಿ",
     "common.disable": "ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿ",
     "common.dyslexia": "ಡಿಸ್ಲೆಕ್ಸಿಯಾ-ಸ್ನೇಹಿ ಮೋಡ್",
+    "common.theme.title": "ಥೀಮ್",
     "common.theme.light": "ಬೆಳಕಿನ ಮೋಡ್",
     "common.theme.dark": "ಡಾರ್ಕ್ ಮೋಡ್",
     "common.language": "ಭಾಷೆ",
     "common.english": "ಇಂಗ್ಲಿಷ್",
     "common.hindi": "ಹಿಂದಿ",
     "common.kannada": "ಕನ್ನಡ",
+    "common.dashboard": "ಡ್ಯಾಶ್ಬೋರ್ಡ್",
+    "common.students": "ವಿದ್ಯಾರ್ಥಿಗಳು",
+    "common.employees": "ನೌಕರರು",
+    "common.reports": "ವರದಿಗಳು",
+    "common.settings": "ಸೆಟ್ಟಿಂಗ್ಗಳು",
+    "common.profile": "ಪ್ರೊಫೈಲ್",
+    "common.logout": "ಲಾಗ್ ಔಟ್",
+    "accessibility.dyslexia_enabled": "ಡಿಸ್ಲೆಕ್ಸಿಯಾ-ಸ್ನೇಹಿ ಮೋಡ್ ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ",
+    "accessibility.dyslexia_disabled": "ಡಿಸ್ಲೆಕ್ಸಿಯಾ-ಸ್ನೇಹಿ ಮೋಡ್ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ",
+    "accessibility.theme_changed": "ಥೀಮ್ ಬದಲಾಯಿಸಲಾಗಿದೆ",
+    "accessibility.language_changed": "ಭಾಷೆ ಬದಲಾಯಿಸಲಾಗಿದೆ",
     // Add more translations as needed
   }
 };
@@ -108,9 +147,10 @@ export function LanguageProvider({
   // Update language in localStorage when it changes
   useEffect(() => {
     localStorage.setItem(storageKey, language);
-    toast.success(`Language changed to ${language}`, {
-      duration: 2000,
-    });
+    toast.success(
+      `${translate('accessibility.language_changed')} ${translate(`common.${language}`)}`,
+      { duration: 2000 }
+    );
   }, [language, storageKey]);
 
   const value = {

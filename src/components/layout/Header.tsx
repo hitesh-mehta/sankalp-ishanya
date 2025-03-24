@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/ui/LanguageProvider';
+import { AccessibilityMenu } from '@/components/ui/AccessibilityMenu';
 
 type HeaderProps = {
   title: string;
@@ -27,11 +28,16 @@ const Header = ({ title, subtitle }: HeaderProps) => {
         isScrolled ? 'shadow-md' : ''
       }`}
     >
-      <div className="max-w-screen-2xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-balance dark:text-gray-900">{title}</h1>
-        {subtitle && (
-          <p className="mt-1 text-gray-700 dark:text-gray-800 max-w-3xl text-balance">{subtitle}</p>
-        )}
+      <div className="max-w-screen-2xl mx-auto flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-balance dark:text-gray-900">{title}</h1>
+          {subtitle && (
+            <p className="mt-1 text-gray-700 dark:text-gray-800 max-w-3xl text-balance">{subtitle}</p>
+          )}
+        </div>
+        <div className="ml-auto">
+          <AccessibilityMenu />
+        </div>
       </div>
     </header>
   );

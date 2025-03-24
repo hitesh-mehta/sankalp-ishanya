@@ -45,10 +45,11 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Dyslexia-friendly variables */
+    /* Dyslexia-friendly variables - improved */
     --letter-spacing: 0.05em;
     --line-height: 1.8;
     --paragraph-spacing: 1.5rem;
+    --dyslexia-bg: 49 100% 96%;
   }
 
   .dark {
@@ -88,22 +89,37 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Dark mode dyslexia background */
+    --dyslexia-bg: 30 50% 10%;
   }
 
-  /* Apply base dyslexia-friendly styles */
+  /* Improved dyslexia-friendly styles with smoother transitions */
   .dyslexia-mode {
+    font-family: 'OpenDyslexic', 'Comic Sans MS', Arial, sans-serif;
     letter-spacing: var(--letter-spacing);
     line-height: var(--line-height);
+    transition: all 0.3s ease-in-out;
+    background-color: hsl(var(--dyslexia-bg)) !important;
+  }
+
+  .dyslexia-mode .bg-background {
+    background-color: hsl(var(--dyslexia-bg)) !important;
+  }
+  
+  .dyslexia-mode .bg-white {
+    background-color: hsl(var(--dyslexia-bg)) !important;
   }
 
   .dyslexia-mode p, 
-  .dyslexia-mode div, 
-  .dyslexia-mode span {
-    margin-bottom: var(--paragraph-spacing);
-  }
-
-  .dyslexia-mode * {
-    font-family: 'OpenDyslexic', 'Comic Sans MS', Arial, sans-serif;
+  .dyslexia-mode div:not(.dyslexia-exclude), 
+  .dyslexia-mode span:not(.dyslexia-exclude),
+  .dyslexia-mode button,
+  .dyslexia-mode label,
+  .dyslexia-mode input,
+  .dyslexia-mode a {
+    font-family: 'OpenDyslexic', 'Comic Sans MS', Arial, sans-serif !important;
+    margin-bottom: 0.5rem;
   }
 
   .dyslexia-mode h1, 
@@ -112,9 +128,26 @@
   .dyslexia-mode h4, 
   .dyslexia-mode h5, 
   .dyslexia-mode h6 {
+    font-family: 'OpenDyslexic', 'Comic Sans MS', Arial, sans-serif !important;
     font-weight: 700;
-    margin-top: 1.5em;
-    margin-bottom: 0.8em;
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+  }
+  
+  /* Add spacing between UI elements for better readability */
+  .dyslexia-mode .form-group,
+  .dyslexia-mode .form-field,
+  .dyslexia-mode .button-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Increase contrast for text in dyslexia mode */
+  .dyslexia-mode.dark {
+    color: rgb(245, 245, 245) !important;
+  }
+  
+  .dyslexia-mode:not(.dark) {
+    color: rgb(30, 30, 30) !important;
   }
 }
 
@@ -126,6 +159,7 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -239,3 +273,7 @@
   opacity: 0;
   transition: opacity 300ms;
 }
+
+
+
+

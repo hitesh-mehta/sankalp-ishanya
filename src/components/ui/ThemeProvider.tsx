@@ -1,5 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useLanguage } from "./LanguageProvider";
 
 type Theme = "dark" | "light";
 
@@ -30,16 +32,29 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
+  const { t } = useLanguage();
 
   useEffect(() => {
     const root = window.document.documentElement;
+    
+    // Apply transition classes for smoother theme changes
+    root.classList.add('transition-colors', 'duration-300');
     
     // Remove the class that's not currently active
     root.classList.remove("light", "dark");
     
     // Add the current theme class
     root.classList.add(theme);
-  }, [theme]);
+    
+    // Store the theme preference
+    localStorage.setItem(storageKey, theme);
+    
+    // Show a toast notification when theme changes
+    toast.success(
+      `${t('accessibility.theme_changed')} ${t(`common.theme.${theme}`)}`,
+      { duration: 2000 }
+    );
+  }, [theme, storageKey, t]);
 
   const value = {
     theme,

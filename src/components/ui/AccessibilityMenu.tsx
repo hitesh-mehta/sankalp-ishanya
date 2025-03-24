@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 export function AccessibilityMenu() {
   const { theme, setTheme } = useTheme();
@@ -23,15 +24,36 @@ export function AccessibilityMenu() {
 
   // Apply dyslexia class to body when component mounts and when mode changes
   useEffect(() => {
-    if (isDyslexiaMode) {
-      document.body.classList.add("dyslexia-mode");
-    } else {
-      document.body.classList.remove("dyslexia-mode");
-    }
+    const applyDyslexiaMode = () => {
+      if (isDyslexiaMode) {
+        document.body.classList.add("dyslexia-mode");
+        document.documentElement.style.scrollBehavior = 'smooth';
+      } else {
+        document.body.classList.remove("dyslexia-mode");
+        document.documentElement.style.scrollBehavior = 'auto';
+      }
+    };
+    
+    // Apply with a slight delay to ensure smooth transition
+    const timer = setTimeout(() => {
+      applyDyslexiaMode();
+    }, 50);
     
     // Save preference to localStorage
     localStorage.setItem("dyslexiaMode", isDyslexiaMode.toString());
+    
+    return () => clearTimeout(timer);
   }, [isDyslexiaMode]);
+
+  const toggleDyslexiaMode = () => {
+    setIsDyslexiaMode(!isDyslexiaMode);
+    toast.success(
+      !isDyslexiaMode 
+        ? t('accessibility.dyslexia_enabled') || 'Dyslexia-friendly mode enabled' 
+        : t('accessibility.dyslexia_disabled') || 'Dyslexia-friendly mode disabled',
+      { duration: 2000 }
+    );
+  };
 
   return (
     <DropdownMenu>
@@ -60,7 +82,7 @@ export function AccessibilityMenu() {
         
         <DropdownMenuSeparator />
         
-        <DropdownMenuLabel>Theme</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("common.theme.title") || "Theme"}</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="h-4 w-4 mr-2" />
           <span className={theme === "light" ? "font-bold" : ""}>
@@ -76,7 +98,7 @@ export function AccessibilityMenu() {
         
         <DropdownMenuSeparator />
         
-        <DropdownMenuItem onClick={() => setIsDyslexiaMode(!isDyslexiaMode)}>
+        <DropdownMenuItem onClick={toggleDyslexiaMode}>
           <BookOpen className="h-4 w-4 mr-2" />
           {isDyslexiaMode 
             ? t("common.disable") + " " + t("common.dyslexia")
