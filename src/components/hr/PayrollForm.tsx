@@ -105,11 +105,13 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                 sideOffset={5}
                 avoidCollisions={true}
                 style={{
-                  maxHeight: "min(300px, 50vh)", // Ensures the date picker does not exceed half of the viewport height
-                  overflowY: "auto",
+                  maxHeight: "250px", // Limits the height to 250px
+                  overflowY: "auto", // Enables vertical scrolling
                 }}
               >
-                <Calendar mode="single" selected={lastPaidDate} onSelect={(date) => date && setLastPaidDate(date)} initialFocus />
+                <div className="max-h-[250px] overflow-y-auto">
+                  <Calendar mode="single" selected={lastPaidDate} onSelect={(date) => date && setLastPaidDate(date)} initialFocus />
+                </div>
               </PopoverContent>
             </Popover>
             <p className="text-sm text-muted-foreground mt-1">This is the date when the employee was last paid their salary</p>
