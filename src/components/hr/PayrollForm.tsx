@@ -11,6 +11,13 @@ import { CalendarIcon, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type PayrollFormProps = {
   employeeId: number;
@@ -33,6 +40,37 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
   const [calendarMonth, setCalendarMonth] = useState<Date>(
     lastPaidDate || new Date()
   );
+
+  // Generate years for the year dropdown
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 31 }, (_, i) => currentYear - 15 + i);
+
+  const months = [
+    { value: 0, label: "January" },
+    { value: 1, label: "February" },
+    { value: 2, label: "March" },
+    { value: 3, label: "April" },
+    { value: 4, label: "May" },
+    { value: 5, label: "June" },
+    { value: 6, label: "July" },
+    { value: 7, label: "August" },
+    { value: 8, label: "September" },
+    { value: 9, label: "October" },
+    { value: 10, label: "November" },
+    { value: 11, label: "December" },
+  ];
+
+  const handleYearChange = (year: string) => {
+    const newDate = new Date(calendarMonth);
+    newDate.setFullYear(parseInt(year));
+    setCalendarMonth(newDate);
+  };
+
+  const handleMonthChange = (month: string) => {
+    const newDate = new Date(calendarMonth);
+    newDate.setMonth(parseInt(month));
+    setCalendarMonth(newDate);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,18 +153,55 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={lastPaidDate}
-                  onSelect={setLastPaidDate}
-                  initialFocus
-                  month={calendarMonth}
-                  onMonthChange={setCalendarMonth}
-                  className="p-3 pointer-events-auto rounded-md border shadow-lg"
-                  captionLayout="dropdown-buttons"
-                  fromYear={2000}
-                  toYear={2030}
-                />
+                <div className="p-3 space-y-3">
+                  {/* Custom month/year selector */}
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <Select
+                        value={calendarMonth.getMonth().toString()}
+                        onValueChange={handleMonthChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {months.map((month) => (
+                            <SelectItem key={month.value} value={month.value.toString()}>
+                              {month.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1">
+                      <Select
+                        value={calendarMonth.getFullYear().toString()}
+                        onValueChange={handleYearChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {years.map((year) => (
+                            <SelectItem key={year} value={year.toString()}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <Calendar
+                    mode="single"
+                    selected={lastPaidDate}
+                    onSelect={setLastPaidDate}
+                    initialFocus
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
+                    className="rounded-md border shadow-lg"
+                  />
+                </div>
               </PopoverContent>
             </Popover>
             <p className="text-sm text-muted-foreground mt-1">

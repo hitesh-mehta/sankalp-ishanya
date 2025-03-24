@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,7 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
         console.error('Error fetching payroll data:', error);
       }
 
-      setPayrollData(data || []);
+      setPayrollData(data as PayrollData[] || []);
     } catch (error) {
       console.error('Error in fetchPayrollData:', error);
     } finally {
