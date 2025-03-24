@@ -152,7 +152,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 bg-white" align="start">
                 <div className="p-3 space-y-3">
                   {/* Month/year selector */}
                   <div className="flex space-x-2">
@@ -164,7 +164,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                         <SelectTrigger>
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
-                        <SelectContent position="popper">
+                        <SelectContent className="bg-white" position="popper">
                           {months.map((month) => (
                             <SelectItem key={month.value} value={month.value.toString()}>
                               {month.label}
@@ -181,7 +181,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                         <SelectTrigger>
                           <SelectValue placeholder="Year" />
                         </SelectTrigger>
-                        <SelectContent position="popper">
+                        <SelectContent className="bg-white" position="popper">
                           {years.map((year) => (
                             <SelectItem key={year} value={year.toString()}>
                               {year}
