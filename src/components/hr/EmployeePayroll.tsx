@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, DollarSign, CalendarClock } from 'lucide-react';
+import { Edit, DollarSign, CalendarClock, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -14,15 +14,18 @@ type EmployeePayrollProps = {
 };
 
 type PayrollData = {
+  id: string;
   employee_id: number;
   current_salary: number;
   last_paid?: string;
 };
 
 const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
-  const [payrollData, setPayrollData] = useState<PayrollData | null>(null);
+  const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
+  const [selectedPayroll, setSelectedPayroll] = useState<PayrollData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
 
   const fetchPayrollData = async () => {
     setLoading(true);
@@ -31,13 +34,13 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
         .from('employee_payroll')
         .select('*')
         .eq('employee_id', employeeId)
-        .maybeSingle();
+        .order('last_paid', { ascending: false });
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching payroll data:', error);
       }
 
-      setPayrollData(data);
+      setPayrollData(data || []);
     } catch (error) {
       console.error('Error in fetchPayrollData:', error);
     } finally {
@@ -51,17 +54,29 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
     }
   }, [employeeId]);
 
-  const handleEditPayroll = () => {
+  const handleEditPayroll = (data: PayrollData) => {
+    setSelectedPayroll(data);
+    setIsAddingNew(false);
+    setShowEditDialog(true);
+  };
+
+  const handleAddPayroll = () => {
+    setSelectedPayroll(null);
+    setIsAddingNew(true);
     setShowEditDialog(true);
   };
 
   const handleDialogClose = () => {
     setShowEditDialog(false);
+    setSelectedPayroll(null);
+    setIsAddingNew(false);
   };
 
   const handlePayrollSaved = () => {
     fetchPayrollData();
     setShowEditDialog(false);
+    setSelectedPayroll(null);
+    setIsAddingNew(false);
   };
 
   const formatCurrency = (amount: number) => {
@@ -84,9 +99,9 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
           <DollarSign className="h-5 w-5 mr-2 text-primary" />
           Payroll Information
         </CardTitle>
-        <Button variant="ghost" size="sm" onClick={handleEditPayroll} className="hover:bg-slate-200">
-          <Edit className="h-4 w-4 mr-2" />
-          {payrollData ? 'Edit' : 'Add'}
+        <Button variant="outline" size="sm" onClick={handleAddPayroll} className="hover:bg-slate-200">
+          <Plus className="h-4 w-4 mr-2" />
+          Add New
         </Button>
       </CardHeader>
       <CardContent className="pt-6">
@@ -94,27 +109,33 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
           <div className="flex justify-center py-6">
             <LoadingSpinner />
           </div>
-        ) : payrollData ? (
+        ) : payrollData.length > 0 ? (
           <div className="space-y-8">
-            <div className="flex items-center">
-              <div className="bg-primary/10 p-3 rounded-full mr-4">
-                <DollarSign className="h-6 w-6 text-primary" />
+            {payrollData.map((payroll) => (
+              <div key={payroll.id} className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-md font-medium">{formatDate(payroll.last_paid)}</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleEditPayroll(payroll)}
+                    className="h-8 px-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="flex items-center">
+                  <div className="bg-primary/10 p-3 rounded-full mr-4">
+                    <DollarSign className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Salary</p>
+                    <p className="text-xl font-bold">{formatCurrency(payroll.current_salary)}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Current Salary</p>
-                <p className="text-2xl font-bold">{formatCurrency(payrollData.current_salary)}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <div className="bg-primary/10 p-3 rounded-full mr-4">
-                <CalendarClock className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Last Paid Date</p>
-                <p className="text-lg font-medium">{formatDate(payrollData.last_paid)}</p>
-              </div>
-            </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-8">
@@ -126,7 +147,7 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
               No payroll records have been added for this employee yet.
             </p>
             <Button 
-              onClick={handleEditPayroll} 
+              onClick={handleAddPayroll} 
               className="mt-2"
               size="lg"
             >
@@ -140,12 +161,12 @@ const EmployeePayroll = ({ employeeId }: EmployeePayrollProps) => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {payrollData ? 'Edit Payroll Information' : 'Add Payroll Information'}
+              {isAddingNew ? 'Add Payroll Information' : 'Edit Payroll Information'}
             </DialogTitle>
           </DialogHeader>
           <PayrollForm
             employeeId={employeeId}
-            existingData={payrollData}
+            existingData={selectedPayroll}
             onSave={handlePayrollSaved}
             onCancel={handleDialogClose}
           />

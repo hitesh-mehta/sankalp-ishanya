@@ -30,6 +30,9 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
     existingData?.last_paid ? new Date(existingData.last_paid) : undefined
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(
+    lastPaidDate || new Date()
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,17 +45,17 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
         last_paid: lastPaidDate ? lastPaidDate.toISOString().split('T')[0] : null
       };
 
-      if (existingData) {
+      if (existingData?.id) {
         // Update existing record
         const { error } = await supabase
           .from('employee_payroll')
           .update(payrollData)
-          .eq('employee_id', employeeId);
+          .eq('id', existingData.id);
 
         if (error) throw error;
         toast.success('Payroll updated successfully');
       } else {
-        // Insert new record
+        // Insert new record - don't check for existing records, allowing multiple entries
         const { error } = await supabase
           .from('employee_payroll')
           .insert(payrollData);
@@ -84,7 +87,7 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                 value={salary}
                 onChange={(e) => setSalary(Number(e.target.value))}
                 min="0"
-                step="1000"
+                // Removed step="1000" to allow any salary value
                 placeholder="Enter employee salary"
                 className="pl-10 text-lg"
                 required
@@ -118,7 +121,13 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
                   selected={lastPaidDate}
                   onSelect={setLastPaidDate}
                   initialFocus
+                  month={calendarMonth}
+                  onMonthChange={setCalendarMonth}
                   className="p-3 pointer-events-auto rounded-md border shadow-lg"
+                  // Allow month navigation
+                  captionLayout="dropdown-buttons"
+                  fromYear={2000}
+                  toYear={2030}
                 />
               </PopoverContent>
             </Popover>
