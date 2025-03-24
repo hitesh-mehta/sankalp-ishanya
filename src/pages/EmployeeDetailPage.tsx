@@ -21,11 +21,17 @@ const EmployeeDetailPage = () => {
   
   useEffect(() => {
     const fetchEmployeeDetails = async () => {
-      if (!id) return;
+      if (!id) {
+        setError('Employee ID is missing');
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
         setError(null);
+        
+        console.log('Fetching employee with ID:', id);
         
         const { data, error: fetchError } = await supabase
           .from('employees')
@@ -39,6 +45,7 @@ const EmployeeDetailPage = () => {
           return;
         }
         
+        console.log('Employee data received:', data);
         setEmployee(data);
       } catch (err) {
         console.error('Error in fetchEmployeeDetails:', err);

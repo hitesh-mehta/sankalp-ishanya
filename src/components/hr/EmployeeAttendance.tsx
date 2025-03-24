@@ -5,7 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Calendar as CalendarIcon, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
+import { AlertCircle, Calendar as CalendarIcon, Check, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Accordion,
@@ -47,6 +47,8 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
         setLoading(true);
         setError(null);
         
+        console.log('Fetching attendance for employee ID:', employeeId);
+        
         // Fetch attendance for the current year
         const startDate = `${currentYear}-01-01`;
         const endDate = `${currentYear}-12-31`;
@@ -64,6 +66,8 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
           setError('Could not load attendance records');
           return;
         }
+        
+        console.log('Attendance data received:', data);
         
         setAttendanceRecords(data as AttendanceRecord[] || []);
         
@@ -215,10 +219,10 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
                                 <div 
                                   key={record.date} 
                                   className={`text-sm p-2 rounded-md flex items-center gap-1.5 ${
-                                    record.attendance ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                                    record.attendance === true ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
                                   }`}
                                 >
-                                  {record.attendance ? 
+                                  {record.attendance === true ? 
                                     <Check className="h-3 w-3" /> : 
                                     <X className="h-3 w-3" />
                                   }

@@ -27,10 +27,10 @@ const HRDashboard = () => {
   const [centers, setCenters] = useState<Center[]>([]);
   const [totalEmployees, setTotalEmployees] = useState(0);
   const user = getCurrentUser();
-  const dataFetchedRef = useRef(false);
+  const dataFetched = useRef(false);
 
   useEffect(() => {
-    if (dataFetchedRef.current) return;
+    if (dataFetched.current || !user) return;
     
     const fetchCentersData = async () => {
       const centersData = await fetchCenters();
@@ -40,11 +40,9 @@ const HRDashboard = () => {
     };
 
     const fetchEmployees = async () => {
-      if (!user) return;
-
       try {
         setLoading(true);
-        dataFetchedRef.current = true;
+        dataFetched.current = true;
 
         const { data: centersData, error: centersError } = await supabase
           .from('centers')

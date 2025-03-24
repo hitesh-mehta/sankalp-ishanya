@@ -25,19 +25,17 @@ const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState<'programs' | 'attendance' | 'report' | 'discussion'>('programs');
   const [viewingStudentId, setViewingStudentId] = useState<number | null>(null);
   const user = getCurrentUser();
-  const dataFetchedRef = useRef(false);
   const { toast } = useToast();
+  const dataFetched = useRef(false);
 
   useEffect(() => {
     // Prevent multiple fetches
-    if (dataFetchedRef.current) return;
+    if (dataFetched.current || !user) return;
     
     const fetchTeacherData = async () => {
-      if (!user) return;
-      
       try {
         setLoading(true);
-        dataFetchedRef.current = true;
+        dataFetched.current = true;
         
         // First, get the employee ID based on the teacher's email
         const { data: employeeData, error: employeeError } = await supabase
@@ -53,6 +51,7 @@ const TeacherDashboard = () => {
             description: "Could not fetch your employee information.",
             variant: "destructive"
           });
+          setLoading(false);
           return;
         }
         
@@ -67,6 +66,7 @@ const TeacherDashboard = () => {
           
         if (programsError) {
           console.error('Error fetching teacher programs:', programsError);
+          setLoading(false);
           return;
         }
         
@@ -99,7 +99,7 @@ const TeacherDashboard = () => {
     };
     
     fetchTeacherData();
-  }, [user]); // Only depends on user
+  }, [user, toast]); // Added toast to dependencies
   
   const handleProgramChange = async (programId: number) => {
     setSelectedProgram(programId);
