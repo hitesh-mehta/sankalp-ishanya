@@ -1,11 +1,13 @@
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import Header from './Header';
 import { DashboardNav } from './DashboardNav';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/ui/LanguageProvider';
 import { AccessibilityMenu } from '@/components/ui/AccessibilityMenu';
+import ChatBot from '@/components/chatbot/ChatBot';
+import { getCurrentUser } from '@/lib/auth';
 
 type LayoutProps = {
   title: string;
@@ -17,6 +19,11 @@ type LayoutProps = {
 
 const Layout = ({ title, subtitle, children, showBackButton = false, onBack }: LayoutProps) => {
   const { t } = useLanguage();
+  const [chatbotOpen, setChatbotOpen] = useState(false);
+  const user = getCurrentUser();
+  
+  // Only show chatbot button for admin, hr, and teacher roles
+  const shouldShowChatbot = user && ['administrator', 'hr', 'teacher'].includes(user.role);
   
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
@@ -44,6 +51,17 @@ const Layout = ({ title, subtitle, children, showBackButton = false, onBack }: L
             <div className="hidden sm:block">
               <AccessibilityMenu />
             </div>
+            {shouldShowChatbot && (
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="relative mr-2 dark:text-gray-200 dark:border-gray-700"
+                onClick={() => setChatbotOpen(!chatbotOpen)}
+                title={t('chatbot.toggle') || 'Toggle chatbot'}
+              >
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+            )}
             <DashboardNav />
           </div>
         </div>
@@ -52,6 +70,10 @@ const Layout = ({ title, subtitle, children, showBackButton = false, onBack }: L
           {children}
         </div>
       </div>
+      
+      {shouldShowChatbot && (
+        <ChatBot isOpen={chatbotOpen} onClose={() => setChatbotOpen(false)} />
+      )}
     </div>
   );
 };
