@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getCurrentUser } from '@/lib/auth';
@@ -115,13 +114,7 @@ const TeacherReport = () => {
         ) || [];
         
         // Count attendance by status
-        const attendanceSummary = {
-          total: filteredAttendance.length,
-          present: filteredAttendance.filter(record => record.status === 'present').length,
-          absent: filteredAttendance.filter(record => record.status === 'absent').length,
-          late: filteredAttendance.filter(record => record.status === 'late').length,
-          excused: filteredAttendance.filter(record => record.status === 'excused').length
-        };
+        const attendanceSummary = getAttendanceStats(filteredAttendance);
         
         setSummary({
           totalStudents: students?.length || 0,
@@ -259,3 +252,17 @@ const TeacherReport = () => {
 };
 
 export default TeacherReport;
+
+const getAttendanceStats = (records: any[]) => {
+  const total = records.length;
+  const present = records.filter(record => record.attendance === true).length;
+  const absent = records.filter(record => record.attendance === false).length;
+  
+  return {
+    total,
+    present,
+    absent,
+    presentPercentage: total > 0 ? (present / total) * 100 : 0,
+    absentPercentage: total > 0 ? (absent / total) * 100 : 0,
+  };
+};

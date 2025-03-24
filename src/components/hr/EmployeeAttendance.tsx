@@ -145,7 +145,7 @@ const EmployeeAttendance = ({ employeeId }: EmployeeAttendanceProps) => {
                   getYear(date) !== currentYear || 
                   date > new Date()
                 }
-                readOnly
+                // Removed the readOnly prop that's causing the error
               />
               <div className="mt-4 flex items-center justify-center gap-2">
                 <div className="flex items-center gap-1">

@@ -24,11 +24,11 @@ type Student = {
 };
 
 type AttendanceRecord = {
-  id: number;
+  id?: number;
   student_id: number;
   date: string;
-  status: 'present' | 'absent' | 'late' | 'excused';
-  notes: string;
+  attendance: boolean; // Changed from status to match the student_attendance table
+  program_id: number;
 };
 
 type AttendanceTrackerProps = {
@@ -42,15 +42,14 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [view, setView] = useState<'daily' | 'monthly'>('daily');
   const [month, setMonth] = useState<Date>(new Date());
-  const [monthlyAttendance, setMonthlyAttendance] = useState<Record<string, Record<number, string>>>({});
+  const [monthlyAttendance, setMonthlyAttendance] = useState<Record<string, Record<number, boolean>>>({});
   const user = getCurrentUser();
   const { toast } = useToast();
 
-  const statusOptions = [
-    { label: 'Present', value: 'present', color: 'bg-green-100 text-green-800' },
-    { label: 'Absent', value: 'absent', color: 'bg-red-100 text-red-800' },
-    { label: 'Late', value: 'late', color: 'bg-yellow-100 text-yellow-800' },
-    { label: 'Excused', value: 'excused', color: 'bg-blue-100 text-blue-800' },
+  // Changed status options to match the boolean attendance field
+  const attendanceOptions = [
+    { label: 'Present', value: true, color: 'bg-green-100 text-green-800' },
+    { label: 'Absent', value: false, color: 'bg-red-100 text-red-800' },
   ];
 
   // Fetch daily attendance for selected date
@@ -62,8 +61,9 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
       const formattedDate = format(date, 'yyyy-MM-dd');
       
       try {
+        // Using student_attendance table instead of attendance
         const { data, error } = await supabase
-          .from('attendance')
+          .from('student_attendance')
           .select('*')
           .eq('date', formattedDate);
           
@@ -81,11 +81,11 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
         
         // Process fetched attendance records
         data?.forEach(record => {
-          records[record.student_id] = record;
+          records[record.student_id] = record as AttendanceRecord;
         });
         
         setAttendanceRecords(records);
-        setAttendance(data || []);
+        setAttendance(data as AttendanceRecord[] || []);
       } catch (error) {
         console.error('Error in fetchAttendance:', error);
       } finally {
@@ -111,8 +111,9 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
         const lastDay = new Date(year, monthNumber, 0).getDate();
         const endDate = `${year}-${monthNumber.toString().padStart(2, '0')}-${lastDay}`;
         
+        // Using student_attendance table instead of attendance
         const { data, error } = await supabase
-          .from('attendance')
+          .from('student_attendance')
           .select('*')
           .gte('date', startDate)
           .lte('date', endDate);
@@ -128,13 +129,13 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
         }
         
         // Process the monthly attendance data
-        const monthData: Record<string, Record<number, string>> = {};
+        const monthData: Record<string, Record<number, boolean>> = {};
         
         data?.forEach(record => {
           if (!monthData[record.date]) {
             monthData[record.date] = {};
           }
-          monthData[record.date][record.student_id] = record.status;
+          monthData[record.date][record.student_id] = record.attendance;
         });
         
         setMonthlyAttendance(monthData);
@@ -148,7 +149,7 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
     fetchMonthlyAttendance();
   }, [month, view, students, user, toast]);
 
-  const handleUpdateAttendance = async (studentId: number, status: 'present' | 'absent' | 'late' | 'excused') => {
+  const handleUpdateAttendance = async (studentId: number, isPresent: boolean) => {
     if (!user) return;
     
     setLoading(true);
@@ -160,13 +161,12 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
       if (existingRecord) {
         // Update existing record
         const { error } = await supabase
-          .from('attendance')
+          .from('student_attendance')
           .update({
-            status,
-            updated_by: user.email,
-            updated_at: new Date().toISOString(),
+            attendance: isPresent,
           })
-          .eq('id', existingRecord.id);
+          .eq('student_id', studentId)
+          .eq('date', formattedDate);
           
         if (error) {
           console.error('Error updating attendance:', error);
@@ -179,14 +179,20 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
         }
       } else {
         // Create new record
+        // Find the student to get their program_id
+        const student = students.find(s => s.student_id === studentId);
+        if (!student) {
+          console.error('Student not found');
+          return;
+        }
+        
         const { error } = await supabase
-          .from('attendance')
+          .from('student_attendance')
           .insert({
             student_id: studentId,
             date: formattedDate,
-            status,
-            created_by: user.email,
-            updated_by: user.email,
+            attendance: isPresent,
+            program_id: student.program_id
           });
           
         if (error) {
@@ -202,7 +208,7 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
       
       // Refresh attendance records
       const { data, error } = await supabase
-        .from('attendance')
+        .from('student_attendance')
         .select('*')
         .eq('date', formattedDate);
         
@@ -213,11 +219,11 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
       
       const records: Record<number, AttendanceRecord> = {};
       data?.forEach(record => {
-        records[record.student_id] = record;
+        records[record.student_id] = record as AttendanceRecord;
       });
       
       setAttendanceRecords(records);
-      setAttendance(data || []);
+      setAttendance(data as AttendanceRecord[] || []);
       
       toast({
         title: "Success",
@@ -232,12 +238,13 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
   };
   
   const getAttendanceStatus = (studentId: number) => {
-    return attendanceRecords[studentId]?.status || '';
+    return attendanceRecords[studentId]?.attendance;
   };
   
-  const getStatusColor = (status: string) => {
-    const statusOption = statusOptions.find(option => option.value === status);
-    return statusOption?.color || 'bg-gray-100 text-gray-800';
+  const getStatusColor = (attendance: boolean | undefined) => {
+    if (attendance === true) return 'bg-green-100 text-green-800';
+    if (attendance === false) return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
   };
 
   const getDaysInMonth = (year: number, month: number) => {
@@ -324,9 +331,9 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
                               <TableCell>{student.student_id}</TableCell>
                               <TableCell>{student.first_name} {student.last_name}</TableCell>
                               <TableCell>
-                                {getAttendanceStatus(student.student_id) ? (
+                                {getAttendanceStatus(student.student_id) !== undefined ? (
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getAttendanceStatus(student.student_id))}`}>
-                                    {getAttendanceStatus(student.student_id).charAt(0).toUpperCase() + getAttendanceStatus(student.student_id).slice(1)}
+                                    {getAttendanceStatus(student.student_id) ? 'Present' : 'Absent'}
                                   </span>
                                 ) : (
                                   <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -336,13 +343,13 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-wrap gap-2">
-                                  {statusOptions.map((option) => (
+                                  {attendanceOptions.map((option) => (
                                     <Button
-                                      key={option.value}
+                                      key={option.label}
                                       variant="outline"
                                       size="sm"
                                       className={`${getAttendanceStatus(student.student_id) === option.value ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}`}
-                                      onClick={() => handleUpdateAttendance(student.student_id, option.value as 'present' | 'absent' | 'late' | 'excused')}
+                                      onClick={() => handleUpdateAttendance(student.student_id, option.value)}
                                     >
                                       {option.label}
                                     </Button>
@@ -422,11 +429,11 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead sticky>Student</TableHead>
+                          <TableHead className="sticky left-0 bg-white z-10">Student</TableHead>
                           {generateDaysArray().map((day) => (
                             <TableHead key={day}>{parseInt(day.split('-')[2])}</TableHead>
                           ))}
-                          <TableHead sticky>Summary</TableHead>
+                          <TableHead className="sticky right-0 bg-white z-10">Summary</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -435,39 +442,35 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
                           const summary = {
                             present: 0,
                             absent: 0,
-                            late: 0,
-                            excused: 0,
                             total: days.length,
                           };
                           
                           days.forEach(day => {
                             const status = monthlyAttendance[day]?.[student.student_id];
-                            if (status) {
-                              summary[status as keyof typeof summary]++;
+                            if (status === true) {
+                              summary.present++;
+                            } else if (status === false) {
+                              summary.absent++;
                             }
                           });
                           
                           const attendanceRate = summary.total > 0 
-                            ? ((summary.present + summary.excused) / summary.total * 100).toFixed(1) 
+                            ? ((summary.present) / summary.total * 100).toFixed(1) 
                             : '0.0';
                           
                           return (
                             <TableRow key={student.id}>
-                              <TableCell className="font-medium">
+                              <TableCell className="font-medium sticky left-0 bg-white z-10">
                                 {student.first_name} {student.last_name}
                               </TableCell>
                               {days.map((day) => {
                                 const status = monthlyAttendance[day]?.[student.student_id];
                                 let icon = null;
                                 
-                                if (status === 'present') {
+                                if (status === true) {
                                   icon = <CheckCircle2 className="h-5 w-5 text-green-500" />;
-                                } else if (status === 'absent') {
+                                } else if (status === false) {
                                   icon = <XCircle className="h-5 w-5 text-red-500" />;
-                                } else if (status === 'late') {
-                                  icon = <AlertCircle className="h-5 w-5 text-yellow-500" />;
-                                } else if (status === 'excused') {
-                                  icon = <AlertCircle className="h-5 w-5 text-blue-500" />;
                                 }
                                 
                                 return (
@@ -478,11 +481,11 @@ const AttendanceTracker = ({ students }: AttendanceTrackerProps) => {
                                   </TableCell>
                                 );
                               })}
-                              <TableCell>
+                              <TableCell className="sticky right-0 bg-white z-10">
                                 <div className="flex flex-col">
                                   <span className="font-medium">{attendanceRate}%</span>
                                   <span className="text-xs text-gray-500">
-                                    P: {summary.present}, A: {summary.absent}, L: {summary.late}, E: {summary.excused}
+                                    Present: {summary.present}, Absent: {summary.absent}
                                   </span>
                                 </div>
                               </TableCell>

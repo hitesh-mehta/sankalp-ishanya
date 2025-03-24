@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +9,6 @@ import AnnouncementBoard from '@/components/announcements/AnnouncementBoard';
 import DiscussionRoom from '@/components/discussion/DiscussionRoom';
 import EmployeeSearch from '@/components/hr/EmployeeSearch';
 import EmployeeList from '@/components/hr/EmployeeList';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { fetchCenters } from '@/lib/api';
 
 type Center = {
@@ -34,7 +30,6 @@ const HRDashboard = () => {
   const dataFetchedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent multiple fetches
     if (dataFetchedRef.current) return;
     
     const fetchCentersData = async () => {
@@ -51,7 +46,6 @@ const HRDashboard = () => {
         setLoading(true);
         dataFetchedRef.current = true;
 
-        // Fetch total employees count from centers
         const { data: centersData, error: centersError } = await supabase
           .from('centers')
           .select('num_of_employees');
@@ -63,7 +57,6 @@ const HRDashboard = () => {
           setTotalEmployees(total);
         }
 
-        // Fetch all employees
         const { data: employeesData, error: employeesError } = await supabase
           .from('employees')
           .select('*');
@@ -86,22 +79,19 @@ const HRDashboard = () => {
 
     fetchCentersData();
     fetchEmployees();
-  }, [user]); // Only depends on user
+  }, [user]);
 
   useEffect(() => {
-    // Filter employees based on search term and selected center
     if (employees.length === 0) return;
     
     let filtered = [...employees];
     
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(emp => 
         emp.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
-    // Filter by center
     if (selectedCenter !== 'all') {
       const centerId = parseInt(selectedCenter);
       filtered = filtered.filter(emp => emp.center_id === centerId);
@@ -134,40 +124,17 @@ const HRDashboard = () => {
                     <p className="text-sm text-muted-foreground">Across all centers</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="md:col-span-2">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Search</CardTitle>
+                    <CardTitle className="text-lg">Search & Filter</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="relative">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search employees by name..."
-                        className="pl-8"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Filter by Center</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Select value={selectedCenter} onValueChange={setSelectedCenter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a center" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Centers</SelectItem>
-                        {centers.map((center) => (
-                          <SelectItem key={center.id} value={center.center_id.toString()}>
-                            {center.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <EmployeeSearch 
+                      onSearch={setSearchTerm} 
+                      onCenterChange={setSelectedCenter} 
+                      centers={centers} 
+                      selectedCenter={selectedCenter}
+                    />
                   </CardContent>
                 </Card>
               </div>
