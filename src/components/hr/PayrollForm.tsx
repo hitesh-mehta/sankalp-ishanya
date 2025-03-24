@@ -31,12 +31,20 @@ type PayrollFormProps = {
   onCancel: () => void;
 };
 
+// Type for month selection
+type Month = {
+  value: number;
+  label: string;
+};
+
 const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollFormProps) => {
   const [salary, setSalary] = useState<number>(existingData?.current_salary || 0);
   const [lastPaidDate, setLastPaidDate] = useState<Date | undefined>(
     existingData?.last_paid ? new Date(existingData.last_paid) : undefined
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Fix the calendar month state by explicitly declaring its type
   const [calendarMonth, setCalendarMonth] = useState<Date>(
     lastPaidDate || new Date()
   );
@@ -45,7 +53,8 @@ const PayrollForm = ({ employeeId, existingData, onSave, onCancel }: PayrollForm
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 31 }, (_, i) => currentYear - 15 + i);
 
-  const months = [
+  // Define months array with proper typing
+  const months: Month[] = [
     { value: 0, label: "January" },
     { value: 1, label: "February" },
     { value: 2, label: "March" },
