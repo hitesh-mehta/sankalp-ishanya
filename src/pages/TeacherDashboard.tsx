@@ -102,12 +102,12 @@ const TeacherDashboard = () => {
     >
       <div className="mb-6">
         <Tabs defaultValue="programs" onValueChange={(value) => setActiveTab(value as 'programs' | 'discussion')}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="programs">My Programs</TabsTrigger>
-            <TabsTrigger value="discussion">Discussion Room</TabsTrigger>
+          <TabsList className="mb-4 w-full sm:w-auto">
+            <TabsTrigger value="programs" className="flex-1 sm:flex-none">My Programs</TabsTrigger>
+            <TabsTrigger value="discussion" className="flex-1 sm:flex-none">Discussion Room</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="programs">
+          <TabsContent value="programs" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 {loading ? (
@@ -127,7 +127,7 @@ const TeacherDashboard = () => {
                           defaultValue={selectedProgram?.toString()} 
                           onValueChange={(value) => handleProgramChange(parseInt(value))}
                         >
-                          <TabsList className="mb-4">
+                          <TabsList className="mb-4 overflow-x-auto flex whitespace-nowrap w-full">
                             {programs.map((program) => (
                               <TabsTrigger key={program.program_id} value={program.program_id.toString()}>
                                 {program.name}
@@ -147,38 +147,40 @@ const TeacherDashboard = () => {
                                   {students.length === 0 ? (
                                     <p className="text-gray-500">No students enrolled in this program.</p>
                                   ) : (
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead>ID</TableHead>
-                                          <TableHead>Name</TableHead>
-                                          <TableHead>Status</TableHead>
-                                          <TableHead>Sessions</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {students.map((student) => (
-                                          <TableRow key={student.id}>
-                                            <TableCell>{student.student_id}</TableCell>
-                                            <TableCell>
-                                              {student.first_name} {student.last_name}
-                                            </TableCell>
-                                            <TableCell>
-                                              <span 
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                  student.status === 'active' 
-                                                    ? 'bg-green-100 text-green-800' 
-                                                    : 'bg-gray-100 text-gray-800'
-                                                }`}
-                                              >
-                                                {student.status || 'N/A'}
-                                              </span>
-                                            </TableCell>
-                                            <TableCell>{student.number_of_sessions || 'N/A'}</TableCell>
+                                    <div className="overflow-x-auto">
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead>ID</TableHead>
+                                            <TableHead>Name</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Sessions</TableHead>
                                           </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {students.map((student) => (
+                                            <TableRow key={student.id}>
+                                              <TableCell>{student.student_id}</TableCell>
+                                              <TableCell>
+                                                {student.first_name} {student.last_name}
+                                              </TableCell>
+                                              <TableCell>
+                                                <span 
+                                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    student.status === 'active' 
+                                                      ? 'bg-green-100 text-green-800' 
+                                                      : 'bg-gray-100 text-gray-800'
+                                                  }`}
+                                                >
+                                                  {student.status || 'N/A'}
+                                                </span>
+                                              </TableCell>
+                                              <TableCell>{student.number_of_sessions || 'N/A'}</TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
                                   )}
                                 </CardContent>
                               </Card>
@@ -196,7 +198,7 @@ const TeacherDashboard = () => {
             </div>
           </TabsContent>
           
-          <TabsContent value="discussion">
+          <TabsContent value="discussion" className="mt-6">
             <DiscussionRoom />
           </TabsContent>
         </Tabs>

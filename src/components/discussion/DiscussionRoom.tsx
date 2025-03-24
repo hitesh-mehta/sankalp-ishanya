@@ -13,7 +13,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 type Message = {
   id: string;
-  sender_id: string; // Added the sender_id property
+  sender_id: string;
   sender_name: string;
   sender_role: string;
   message: string;
@@ -24,6 +24,7 @@ const DiscussionRoom = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const user = getCurrentUser();
   const { toast } = useToast();
@@ -102,6 +103,7 @@ const DiscussionRoom = () => {
     if (!user || !newMessage.trim()) return;
     
     try {
+      setIsSending(true);
       const { error } = await supabase
         .from('discussion_messages')
         .insert({
@@ -115,7 +117,7 @@ const DiscussionRoom = () => {
         console.error('Error sending message:', error);
         toast({
           title: 'Error',
-          description: 'Failed to send message',
+          description: 'Failed to send message. Please try again.',
           variant: 'destructive',
         });
         return;
@@ -125,6 +127,13 @@ const DiscussionRoom = () => {
       setNewMessage('');
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSending(false);
     }
   };
   
@@ -159,6 +168,15 @@ const DiscussionRoom = () => {
         return 'bg-green-100 text-green-700';
       default:
         return 'bg-gray-100 text-gray-700';
+    }
+  };
+  
+  // Helper function to format timestamp
+  const formatTime = (timestamp: string) => {
+    try {
+      return new Date(timestamp).toLocaleString();
+    } catch (e) {
+      return timestamp;
     }
   };
   
@@ -217,7 +235,7 @@ const DiscussionRoom = () => {
                           msg.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'
                         }`}
                       >
-                        {new Date(msg.created_at).toLocaleString()}
+                        {formatTime(msg.created_at)}
                       </div>
                     </div>
                     
@@ -245,14 +263,15 @@ const DiscussionRoom = () => {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             className="min-h-[60px] flex-grow"
+            disabled={isSending}
           />
           <Button
             onClick={handleSendMessage}
-            disabled={!newMessage.trim() || !user}
+            disabled={!newMessage.trim() || !user || isSending}
             className="self-end"
             size="icon"
           >
-            <Send className="h-4 w-4" />
+            {isSending ? <LoadingSpinner size="sm" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </CardFooter>
